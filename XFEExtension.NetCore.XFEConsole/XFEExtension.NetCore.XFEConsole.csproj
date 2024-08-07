@@ -4,6 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Version>1.0.0</Version>
+    <Authors>XFEstudio</Authors>
+    <Company>寰宇朽力网络科技</Company>
+    <Description>XFEConsole是一个可以运行用户进行远程输出的调试辅助工具，需要配合XFE工具箱来使用，当然也可以根据本DLL内的架构搭建一个调试工具</Description>
+    <Copyright>寰宇朽力网络科技版权所有</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
