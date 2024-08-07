@@ -16,6 +16,7 @@
     <PackageTags>XFE;Console;Test;Out;Output;Remote;</PackageTags>
     <PackageReleaseNotes>First Release</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
