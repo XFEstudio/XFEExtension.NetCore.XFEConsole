@@ -17,6 +17,7 @@
     <PackageReleaseNotes>First Release</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>XFEExtension.NetCore.XFEConsole</Title>
   </PropertyGroup>
 
   <ItemGroup>
