@@ -99,12 +99,12 @@ public class XFEConsole
     /// <param name="onlyProperty">仅解析属性</param>
     /// <param name="onlyPublic">仅解析公共属性或字段</param>
     /// <returns></returns>
-    public static async Task WriteObject(object? obj, string remarkName = "分析对象", bool onlyProperty = false, bool onlyPublic = true)
+    public static async Task WriteObject(object? obj, bool onlyProperty = false, bool onlyPublic = true, string remarkName = "分析对象")
     {
         var objectInfo = "[color red]无法分析对象：[color white]";
         try
         {
-            objectInfo = XFEConverter.GetObjectInfo(StringConverter.ColoredObjectAnalyzer, remarkName, ObjectPlace.Main, 0, obj?.GetType(), obj, onlyProperty, onlyPublic).OutPutObject();
+            objectInfo = XFEConverter.GetObjectInfo(StringConverter.ColoredObjectAnalyzer, remarkName, ObjectPlace.Main, 0, [obj], obj?.GetType(), obj, onlyProperty, onlyPublic).OutPutObject();
         }
         catch (Exception ex)
         {
