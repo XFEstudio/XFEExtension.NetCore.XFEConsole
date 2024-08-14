@@ -205,6 +205,8 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void WriteLine(object? value)
     {
+        if (value is Exception exception)
+            XFEConsole.WriteLine($"[foldblock color: white #ff0000 title: 错误：{exception.Message} text: {exception}]").Wait();
         if (XFEConsole.AutoAnalyzeObject)
             XFEConsole.WriteObject(value).Wait();
         else

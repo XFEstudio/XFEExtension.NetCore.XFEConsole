@@ -61,15 +61,12 @@ public class XFEConsole
     /// <param name="port">端口</param>
     /// <param name="password">密码</param>
     /// <returns>是否连接成功</returns>
-    public static async Task<bool> UseXFEConsole(int port, string password = "") => await UseXFEConsole($"ws://localhost:{port}/", AppDomain.CurrentDomain.FriendlyName, Guid.NewGuid().ToString(), password);
+    public static async Task<bool> UseXFEConsole(int port = 3280, string password = "") => await UseXFEConsole($"ws://localhost:{port}/", AppDomain.CurrentDomain.FriendlyName, Guid.NewGuid().ToString(), password);
     /// <summary>
     /// 设置XFE控制台
     /// </summary>
     /// <returns></returns>
-    public static void SetConsoleOutput()
-    {
-        Console.SetOut(new XFEConsoleTextWriter(Console.Out));
-    }
+    public static void SetConsoleOutput() => Console.SetOut(new XFEConsoleTextWriter(Console.Out));
     /// <summary>
     /// 连接XFE控制台
     /// </summary>
@@ -101,15 +98,14 @@ public class XFEConsole
     /// <returns></returns>
     public static async Task WriteObject(object? obj, bool onlyProperty = false, bool onlyPublic = true, string remarkName = "分析对象")
     {
-        var objectInfo = "[color red]无法分析对象：[color white]";
+        string? objectInfo;
         try
         {
-            objectInfo = XFEConverter.GetObjectInfo(StringConverter.ColoredObjectAnalyzer, remarkName, ObjectPlace.Main, 0, [obj], obj?.GetType(), obj, onlyProperty, onlyPublic).OutPutObject();
+            objectInfo = $"[foldblock color: white #9898e7 title: 分析对象：{obj?.GetType().Name} text: {XFEConverter.GetObjectInfo(StringConverter.ColoredObjectAnalyzer, remarkName, ObjectPlace.Main, 0, [obj], obj?.GetType(), obj, onlyProperty, onlyPublic).OutPutObject()}]";
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex);
-            objectInfo += ex.StackTrace;
+            objectInfo = $"[foldblock color: white #ff0000 title: 错误：{ex.Message} text: {ex}]";
         }
         if (ShowInDebug)
             Debug.WriteLine(objectInfo);
