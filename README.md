@@ -15,3 +15,17 @@ XFEConsole.UseConsoleColor = true;      // 使用控制台颜色，默认为 tru
 XFEConsole.ShowInLocalConsole = false;  // 是否在本地控制台中显示，默认为 false
 XFEConsole.AutoAnalyzeObject = true;    // 是否自动解析对象，而非直接输出对象的.ToString()方法，默认为 true
 ```
+
+## 配合XUnit测试框架
+
+```csharp
+class Program
+{
+    [UseXFEConsole]
+    [SMTest]
+    static void TestMethod()
+    {
+        Console.WriteLine("使用XUnit框架输出");
+    }
+}
+```

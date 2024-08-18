@@ -11,6 +11,10 @@ namespace XFEExtension.NetCore.XFEConsole;
 public class XFEConsole
 {
     /// <summary>
+    /// 当前控制台输出流
+    /// </summary>
+    public static XFEConsoleTextWriter? CurrentConsoleTextWriter { get; set; }
+    /// <summary>
     /// 是否在本地调试的Debug中展示
     /// </summary>
     /// <remarks>
@@ -63,10 +67,28 @@ public class XFEConsole
     /// <returns>是否连接成功</returns>
     public static async Task<bool> UseXFEConsole(int port = 3280, string password = "") => await UseXFEConsole($"ws://localhost:{port}/", AppDomain.CurrentDomain.FriendlyName, Guid.NewGuid().ToString(), password);
     /// <summary>
+    /// 停止XFE控制台
+    /// </summary>
+    /// <returns></returns>
+    public static async Task StopXFEConsole()
+    {
+        if (CurrentConsoleTextWriter is not null)
+            Console.SetOut(CurrentConsoleTextWriter.OriginalTextWriter);
+        foreach (var client in ClientList)
+        {
+            await client.Client.CloseCyberCommClient();
+        }
+    }
+    /// <summary>
     /// 设置XFE控制台
     /// </summary>
     /// <returns></returns>
-    public static void SetConsoleOutput() => Console.SetOut(new XFEConsoleTextWriter(Console.Out));
+    public static void SetConsoleOutput()
+    {
+        CurrentConsoleTextWriter = new(Console.Out);
+        Console.SetOut(CurrentConsoleTextWriter);
+    }
+
     /// <summary>
     /// 连接XFE控制台
     /// </summary>
