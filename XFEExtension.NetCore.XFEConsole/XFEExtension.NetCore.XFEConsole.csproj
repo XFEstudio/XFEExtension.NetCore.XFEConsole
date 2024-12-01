@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.3</Version>
+    <Version>1.1.0</Version>
     <Authors>XFEstudio</Authors>
     <Company>寰宇朽力网络科技</Company>
     <Description>XFEConsole是一个可以运行用户进行远程输出的调试辅助工具，需要配合XFE工具箱来使用，当然也可以根据本DLL内的架构搭建一个调试工具</Description>
@@ -14,7 +14,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/XFEstudio/XFEExtension.NetCore.XFEConsole.git</RepositoryUrl>
     <PackageTags>XFE;Console;Test;Out;Output;Remote;</PackageTags>
-    <PackageReleaseNotes>新增UseXFEConsole特性，用于添加至XUnit单元测试</PackageReleaseNotes>
+    <PackageReleaseNotes>新增日志记录功能</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>XFEExtension.NetCore.XFEConsole</Title>
@@ -37,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="XFEExtension.NetCore" Version="3.0.2" />
+    <PackageReference Include="XFEExtension.NetCore" Version="3.2.5" />
   </ItemGroup>
 
 </Project>

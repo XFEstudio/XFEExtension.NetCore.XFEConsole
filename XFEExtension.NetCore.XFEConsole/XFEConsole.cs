@@ -8,12 +8,8 @@ namespace XFEExtension.NetCore.XFEConsole;
 /// <summary>
 /// XFE控制台
 /// </summary>
-public class XFEConsole
+public static class XFEConsole
 {
-    /// <summary>
-    /// 当前控制台输出流
-    /// </summary>
-    public static XFEConsoleTextWriter? CurrentConsoleTextWriter { get; set; }
     /// <summary>
     /// 是否在本地调试的Debug中展示
     /// </summary>
@@ -34,7 +30,7 @@ public class XFEConsole
     /// <remarks>
     /// 默认为 false
     /// </remarks>
-    public static bool ShowInLocalConsole { get; set; } = false;
+    public static bool ShowInLocalConsole { get; set; } = true;
     /// <summary>
     /// 是否自动解析对象，而非直接输出对象的.ToString()方法
     /// </summary>
@@ -43,9 +39,21 @@ public class XFEConsole
     /// </remarks>
     public static bool AutoAnalyzeObject { get; set; } = true;
     /// <summary>
+    /// 是否启动日志记录
+    /// </summary>
+    public static bool EnableLog { get; set; } = false;
+    /// <summary>
+    /// 当前日志
+    /// </summary>
+    public static XFELog Log { get; set; } = new();
+    /// <summary>
     /// 客户端列表
     /// </summary>
     public static List<XFEConsoleProgramClient> ClientList { get; set; } = [];
+    /// <summary>
+    /// 当前控制台输出流
+    /// </summary>
+    public static XFEConsoleTextWriter? CurrentConsoleTextWriter { get; set; }
     /// <summary>
     /// 使用XFE控制台
     /// </summary>
@@ -67,6 +75,16 @@ public class XFEConsole
     /// <returns>是否连接成功</returns>
     public static async Task<bool> UseXFEConsole(int port = 3280, string password = "") => await UseXFEConsole($"ws://localhost:{port}/", AppDomain.CurrentDomain.FriendlyName, Guid.NewGuid().ToString(), password);
     /// <summary>
+    /// 使用XFE控制台日志
+    /// </summary>
+    public static void UseXFEConsoleLog(bool autoAddTimeInfo = true, long logTextMaximizeLength = 500000000)
+    {
+        EnableLog = true;
+        Log.AutoAddTimeInfo = autoAddTimeInfo;
+        Log.LogTextMaximizeLength = logTextMaximizeLength;
+        SetConsoleOutput();
+    }
+    /// <summary>
     /// 停止XFE控制台
     /// </summary>
     /// <returns></returns>
@@ -75,9 +93,7 @@ public class XFEConsole
         if (CurrentConsoleTextWriter is not null)
             Console.SetOut(CurrentConsoleTextWriter.OriginalTextWriter);
         foreach (var client in ClientList)
-        {
             await client.Client.CloseCyberCommClient();
-        }
     }
     /// <summary>
     /// 设置XFE控制台
@@ -88,7 +104,6 @@ public class XFEConsole
         CurrentConsoleTextWriter = new(Console.Out);
         Console.SetOut(CurrentConsoleTextWriter);
     }
-
     /// <summary>
     /// 连接XFE控制台
     /// </summary>
@@ -131,8 +146,8 @@ public class XFEConsole
         }
         if (ShowInDebug)
             Debug.WriteLine(objectInfo);
-        if (ShowInLocalConsole && Console.Out is XFEConsoleTextWriter)
-            (Console.Out as XFEConsoleTextWriter)?.OriginalTextWriter.WriteLine(objectInfo);
+        if (ShowInLocalConsole)
+            CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(objectInfo);
         foreach (var client in ClientList)
             await client.OutputMessage(objectInfo, true);
     }
@@ -147,8 +162,16 @@ public class XFEConsole
         {
             if (ShowInDebug)
                 Debug.WriteLine(text);
-            if (ShowInLocalConsole && Console.Out is XFEConsoleTextWriter)
-                (Console.Out as XFEConsoleTextWriter)?.OriginalTextWriter.WriteLine(text);
+            if (EnableLog)
+            {
+                var log = Log.WriteLine(text, out var isHead);
+                if (ShowInLocalConsole)
+                    CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine($"{(Log.AutoAddTimeInfo && isHead ? XFELogEntry.TimeToString(log.Time) : string.Empty)}{text}");
+            }
+            else if (ShowInLocalConsole)
+            {
+                CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(text);
+            }
             foreach (var client in ClientList)
                 await client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", true);
         }
@@ -164,8 +187,16 @@ public class XFEConsole
         {
             if (ShowInDebug)
                 Debug.WriteLine(text);
-            if (ShowInLocalConsole && Console.Out is XFEConsoleTextWriter)
-                (Console.Out as XFEConsoleTextWriter)?.OriginalTextWriter.Write(text);
+            if (EnableLog)
+            {
+                var log = Log.Write(text, out var isHead);
+                if (ShowInLocalConsole)
+                    CurrentConsoleTextWriter?.OriginalTextWriter.Write($"{(Log.AutoAddTimeInfo && isHead ? XFELogEntry.TimeToString(log.Time) : string.Empty)}{text}");
+            }
+            else if (ShowInLocalConsole)
+            {
+                CurrentConsoleTextWriter?.OriginalTextWriter.Write(text);
+            }
             foreach (var client in ClientList)
                 await client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", false);
         }

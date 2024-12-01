@@ -1,6 +1,7 @@
 ﻿using XFEExtension.NetCore.XFEConsole;
 
-await XFEConsole.UseXFEConsole();
+XFEConsole.ShowInDebug = false;
+XFEConsole.UseXFEConsoleLog();
 Console.WriteLine("准备测试...");
 await Task.Delay(1000);
 Console.WriteLine("3");
@@ -9,10 +10,31 @@ Console.WriteLine("2");
 await Task.Delay(1000);
 Console.WriteLine("1");
 await Task.Delay(1000);
-for (int i = 0; i < 10000; i++)
-{
-    Console.WriteLine($"循环压力测试：{i}");
-}
+Console.WriteLine("测试输出");
+Console.WriteLine("测试\n第二行\n第\\n三行\n最后一行");
 await Task.Delay(1000);
-Console.WriteLine("测试结束");
+Console.Write("开始：");
+await Task.Delay(1000);
+Console.Write("1..");
+await Task.Delay(1000);
+Console.Write(" 2..");
+await Task.Delay(1000);
+Console.Write("[ERROR] 3");
+Console.Write("测试\n第二行\n第\\n三行\n最后一行");
+await Task.Delay(1000);
+Console.WriteLine("结束");
+//await Task.Delay(1000);
+//Console.WriteLine("准备进行压力测试");
+//await Task.Delay(3000);
+//for (int i = 0; i < 10000; i++)
+//    Console.WriteLine($"[DEBUG]循环压力测试：{i}");
+//await Task.Delay(1000);
+//Console.WriteLine("测试结束");
 await Task.Delay(3000);
+Console.WriteLine("输出结果");
+var exportText = XFELog.Current?.Export();
+Console.WriteLine(exportText);
+XFELog.Current?.Clear();
+if (exportText is not null)
+    XFELog.Current?.Import(exportText);
+Console.WriteLine("完成");
