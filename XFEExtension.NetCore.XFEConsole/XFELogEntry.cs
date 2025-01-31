@@ -86,6 +86,15 @@ public class XFELogEntry
         if (split.Length > 2)
         {
             var logText = split[2];
+            if (split.Length > 3)
+            {
+                bool inverse = false;
+                for (var i = 3; i < split.Length; i++)
+                {
+                    logText += $"{(inverse ? ']' : '[')}{split[i]}";
+                    inverse = !inverse;
+                }
+            }
             foreach (var converter in converters)
                 logText = converter.Inverse(logText);
             return new()
