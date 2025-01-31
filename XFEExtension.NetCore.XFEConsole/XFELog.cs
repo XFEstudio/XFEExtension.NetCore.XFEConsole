@@ -187,9 +187,22 @@ public class XFELog
             if (split.Length > 1)
             {
                 if (!TryConverterToLogLevel(split[0], out logLevel))
+                {
                     logLevel = isHead ? LogLevel.Info : CacheLog.Level;
+                }
                 else
+                {
                     logText = split[1];
+                    if (split.Length > 2)
+                    {
+                        bool inverse = false;
+                        for (var i = 2; i < split.Length; i++)
+                        {
+                            logText += $"{(inverse ? ']' : '[')}{split[i]}";
+                            inverse = !inverse;
+                        }
+                    }
+                }
             }
         }
         catch { }
