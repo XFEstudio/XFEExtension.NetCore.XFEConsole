@@ -5,13 +5,12 @@ namespace XFEExtension.NetCore.XFEConsole;
 /// <summary>
 /// XFE日志
 /// </summary>
-public class XFELog
+public abstract class XFELog
 {
-    private bool _isHead = true;
     /// <summary>
     /// 自动添加时间信息
     /// </summary>
-    public bool AutoAddTimeInfo { get; set; } = false;
+    public bool AutoAddTimeInfo { get; set; } = true;
     /// <summary>
     /// 使用缓存，并在WriteLine时记录日志
     /// </summary>
@@ -19,7 +18,7 @@ public class XFELog
     /// <summary>
     /// Log日志文件长度上限
     /// </summary>
-    public long LogTextMaximizeLength { get; set; } = 500000000;
+    public long LogTextMaximizeLength { get; set; } = -1;
     /// <summary>
     /// 当前日志文本长度
     /// </summary>
@@ -36,7 +35,7 @@ public class XFELog
     /// <summary>
     /// 日志路径
     /// </summary>
-    public string LogPath { get; set; } = "Log";
+    public virtual string LogPath { get; set; } = $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
     /// <summary>
     /// 当前日志
     /// </summary>
@@ -44,68 +43,51 @@ public class XFELog
     /// <summary>
     /// 缓存日志
     /// </summary>
-    public XFELogEntry CacheLog { get; set; } = new();
+    public static AsyncLocal<XFELogEntry?> CacheLog { get; set; } = new();
     /// <summary>
     /// 日志条目
     /// </summary>
-    public List<XFELogEntry> Logs { get; set; } = [];
+    public virtual List<XFELogEntry> Logs { get; protected set; } = [];
     /// <summary>
     /// 日志特殊字符的转换器（如回车，换行等）
     /// </summary>
     public EscapeConverter[] Converters { get; set; } = [new("\n", "\\n", "n", "\\"), new("\r", "\\r", "r", "\\")];
-    /// <summary>
-    /// XFE日志
-    /// </summary>
-    public XFELog() => Current = this;
-    private void RemoveOverflow()
-    {
-        var currentLength = CurrentLogsTextLength;
-        while (currentLength > LogTextMaximizeLength)
-        {
-            currentLength -= Logs[0].LogText.Length;
-            Logs.RemoveAt(0);
-        }
-    }
+
     /// <summary>
     /// 添加一条日志
     /// </summary>
     /// <param name="xFELogEntry">日志条目</param>
-    public void AddLog(XFELogEntry xFELogEntry)
-    {
-        Logs.Add(xFELogEntry);
-        RemoveOverflow();
-    }
+    public abstract void AddLog(XFELogEntry xFELogEntry);
+
     /// <summary>
     /// 导出当前全部日志为文本
     /// </summary>
     /// <returns>日志文本</returns>
-    public string Export() => string.Join("\n", Logs.Select(log => log.ToString(Converters)));
+    public abstract string Export();
+
     /// <summary>
     /// 导出指定日期区间的日志为文本
     /// </summary>
     /// <returns>日志文本</returns>
-    public string Export(DateTime startDateTime, DateTime endDateTime) => string.Join("\n", Logs.Where(log => log.Time >= startDateTime && log.Time <= endDateTime).Select(log => log.ToString(Converters)));
+    public abstract string Export(DateTime startDateTime, DateTime endDateTime);
+
     /// <summary>
     /// 导出当前全部日志原文为文本
     /// </summary>
     /// <returns>日志文本</returns>
-    public string ExportOriginal() => string.Join("\n", Logs.Select(log => log.ToString()));
+    public abstract string ExportOriginal();
+
     /// <summary>
     /// 导入日志
     /// </summary>
     /// <param name="logText">日志文本</param>
-    public void Import(string logText)
-    {
-        foreach (var log in logText.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (log is not null && XFELogEntry.FromString(log, Converters) is XFELogEntry xFELogEntry)
-                AddLog(xFELogEntry);
-        }
-    }
+    public abstract void Import(string logText);
+
     /// <summary>
     /// 清除全部日志
     /// </summary>
-    public void Clear() => Logs.Clear();
+    public abstract void Clear();
+
     /// <summary>
     /// 添加一条日志
     /// </summary>
@@ -124,6 +106,7 @@ public class XFELog
         AddLog(entry);
         return entry;
     }
+
     /// <summary>
     /// 添加一条日志
     /// </summary>
@@ -131,6 +114,7 @@ public class XFELog
     /// <param name="logLevel">日志级别</param>
     /// <returns>日志条目</returns>
     public XFELogEntry AddLog(string logText, LogLevel logLevel = LogLevel.Info) => AddLog(logText, DateTime.Now, logLevel);
+
     /// <summary>
     /// 记录
     /// </summary>
@@ -139,16 +123,15 @@ public class XFELog
     /// <returns></returns>
     public XFELogEntry Write(string logText, out bool isHead)
     {
-        isHead = _isHead;
-        _isHead = false;
-        var logLevel = isHead ? LogLevel.Info : CacheLog.Level;
+        isHead = CacheLog.Value is null;
+        var logLevel = isHead ? LogLevel.Info : CacheLog.Value!.Level;
         try
         {
             var split = logText.Split(['[', ']'], StringSplitOptions.RemoveEmptyEntries);
             if (split.Length > 1)
             {
                 if (!TryConverterToLogLevel(split[0], out logLevel))
-                    logLevel = isHead ? LogLevel.Info : CacheLog.Level;
+                    logLevel = isHead ? LogLevel.Info : CacheLog.Value!.Level;
                 else
                     logText = split[1];
             }
@@ -158,18 +141,25 @@ public class XFELog
         {
             if (isHead)
             {
-                CacheLog = AddLog(logText, logLevel);
-                return CacheLog;
+                var log = new XFELogEntry
+                {
+                    Time = DateTime.Now,
+                    Level = logLevel,
+                    LogText = logText
+                };
+                CacheLog.Value = log;
+                return log;
             }
-            CacheLog.Level = logLevel;
-            CacheLog.LogText += logText;
-            return CacheLog;
+            CacheLog.Value!.Level = logLevel;
+            CacheLog.Value!.LogText += logText;
+            return CacheLog.Value;
         }
         else
         {
             return AddLog(logText, logLevel);
         }
     }
+
     /// <summary>
     /// 记录一行
     /// </summary>
@@ -178,9 +168,8 @@ public class XFELog
     /// <returns></returns>
     public XFELogEntry WriteLine(string logText, out bool isHead)
     {
-        isHead = _isHead;
-        _isHead = true;
-        var logLevel = isHead ? LogLevel.Info : CacheLog.Level;
+        isHead = CacheLog.Value is null;
+        var logLevel = isHead ? LogLevel.Info : CacheLog.Value!.Level;
         try
         {
             var split = logText.Split(['[', ']'], StringSplitOptions.RemoveEmptyEntries);
@@ -188,7 +177,7 @@ public class XFELog
             {
                 if (!TryConverterToLogLevel(split[0], out logLevel))
                 {
-                    logLevel = isHead ? LogLevel.Info : CacheLog.Level;
+                    logLevel = isHead ? LogLevel.Info : CacheLog.Value!.Level;
                 }
                 else
                 {
@@ -209,16 +198,29 @@ public class XFELog
         if (RecordOnlyOnWriteLine)
         {
             if (isHead)
-                return AddLog(logText, logLevel);
-            CacheLog.Level = logLevel;
-            CacheLog.LogText += logText;
-            return CacheLog;
+            {
+                var log = new XFELogEntry
+                {
+                    Time = DateTime.Now,
+                    Level = logLevel,
+                    LogText = logText
+                };
+                CacheLog.Value = null;
+                return log;
+            }
+            CacheLog.Value!.Level = logLevel;
+            CacheLog.Value!.LogText += logText;
+            var returnLog = CacheLog.Value;
+            CacheLog.Value = null;
+            AddLog(returnLog);
+            return returnLog;
         }
         else
         {
             return AddLog(logText, logLevel);
         }
     }
+
     /// <summary>
     /// 尝试转换为警示等级
     /// </summary>
@@ -251,5 +253,24 @@ public class XFELog
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// 从文本导入日志
+    /// </summary>
+    /// <param name="logText"></param>
+    /// <param name="converters"></param>
+    /// <returns></returns>
+    public static List<XFELogEntry> ImportFromText(string logText, params EscapeConverter[] converters)
+    {
+        var logs = new List<XFELogEntry>();
+        if (converters.Length == 0)
+            converters = [new("\n", "\\n", "n", "\\"), new("\r", "\\r", "r", "\\")];
+        foreach (var log in logText.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (log is not null && XFELogEntry.FromString(log, converters) is XFELogEntry xFELogEntry)
+                logs.Add(xFELogEntry);
+        }
+        return logs;
     }
 }

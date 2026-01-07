@@ -18,13 +18,13 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void Write(bool value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(char value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
@@ -37,7 +37,7 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
             {
                 stringBuilder.Append(sigChar);
             }
-            XFEConsole.Write(stringBuilder.ToString()).Wait();
+            XFEConsole.Write(stringBuilder.ToString());
         }
     }
 
@@ -48,74 +48,74 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
-            XFEConsole.Write(stringBuilder.ToString()).Wait();
+            XFEConsole.Write(stringBuilder.ToString());
         }
     }
 
     /// <inheritdoc/>
     public override void Write(decimal value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(double value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(int value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(long value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(object? value)
     {
-        XFEConsole.Write(value?.ToString()).Wait();
+        XFEConsole.Write(value?.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(float value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(string? value)
     {
-        XFEConsole.Write(value).Wait();
+        XFEConsole.Write(value);
     }
 
     /// <inheritdoc/>
     public override void Write(StringBuilder? value)
     {
-        XFEConsole.Write(value?.ToString()).Wait();
+        XFEConsole.Write(value?.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(uint value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(ulong value)
     {
-        XFEConsole.Write(value.ToString()).Wait();
+        XFEConsole.Write(value.ToString());
     }
 
     /// <inheritdoc/>
     public override async Task WriteAsync(char value)
     {
-        await XFEConsole.Write(value.ToString());
+        await XFEConsole.WriteAsync(value.ToString());
     }
 
     /// <inheritdoc/>
@@ -125,32 +125,32 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
-            await XFEConsole.Write(stringBuilder.ToString());
+            await XFEConsole.WriteAsync(stringBuilder.ToString());
         }
     }
 
     /// <inheritdoc/>
     public override async Task WriteAsync(string? value)
     {
-        await XFEConsole.Write(value);
+        await XFEConsole.WriteAsync(value);
     }
 
     /// <inheritdoc/>
     public override void WriteLine()
     {
-        XFEConsole.WriteLine("").Wait();
+        XFEConsole.WriteLine("");
     }
 
     /// <inheritdoc/>
     public override void WriteLine(bool value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(char value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
@@ -163,7 +163,7 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
             {
                 stringBuilder.Append(sigChar);
             }
-            XFEConsole.WriteLine(stringBuilder.ToString()).Wait();
+            XFEConsole.WriteLine(stringBuilder.ToString());
         }
     }
 
@@ -174,85 +174,85 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
-            XFEConsole.WriteLine(stringBuilder.ToString()).Wait();
+            XFEConsole.WriteLine(stringBuilder.ToString());
         }
     }
 
     /// <inheritdoc/>
     public override void WriteLine(decimal value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(double value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(int value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(long value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(object? value)
     {
         if (value is Exception exception)
-            XFEConsole.WriteLine($"[foldblock color: white #ff0000 title: 错误：{exception.Message} text: {exception}]").Wait();
+            XFEConsole.WriteLine($"[foldblock color: white #ff0000 title: 错误：{exception.Message} text: {exception}]");
         if (XFEConsole.AutoAnalyzeObject)
             XFEConsole.WriteObject(value).Wait();
         else
-            XFEConsole.WriteLine(value?.ToString()).Wait();
+            XFEConsole.WriteLine(value?.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(float value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(string? value)
     {
-        XFEConsole.WriteLine(value).Wait();
+        XFEConsole.WriteLine(value);
     }
 
     /// <inheritdoc/>
     public override void WriteLine(StringBuilder? value)
     {
-        XFEConsole.WriteLine(value?.ToString()).Wait();
+        XFEConsole.WriteLine(value?.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(uint value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(ulong value)
     {
-        XFEConsole.WriteLine(value.ToString()).Wait();
+        XFEConsole.WriteLine(value.ToString());
     }
 
     /// <inheritdoc/>
     public override async Task WriteLineAsync()
     {
-        await XFEConsole.WriteLine("");
+        await XFEConsole.WriteLineAsync("");
     }
 
     /// <inheritdoc/>
     public override async Task WriteLineAsync(char value)
     {
-        await XFEConsole.WriteLine(value.ToString());
+        await XFEConsole.WriteLineAsync(value.ToString());
     }
 
     /// <inheritdoc/>
@@ -262,13 +262,13 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
-            await XFEConsole.WriteLine(stringBuilder.ToString());
+            await XFEConsole.WriteLineAsync(stringBuilder.ToString());
         }
     }
 
     /// <inheritdoc/>
     public override async Task WriteLineAsync(string? value)
     {
-        await XFEConsole.WriteLine(value);
+        await XFEConsole.WriteLineAsync(value);
     }
 }

@@ -45,7 +45,7 @@ public static class XFEConsole
     /// <summary>
     /// 当前日志
     /// </summary>
-    public static XFELog Log { get; set; } = new();
+    public static XFELog Log { get; set; } = new XFEFileLog();
     /// <summary>
     /// 客户端列表
     /// </summary>
@@ -77,9 +77,11 @@ public static class XFEConsole
     /// <summary>
     /// 使用XFE控制台日志
     /// </summary>
-    public static void UseXFEConsoleLog(bool autoAddTimeInfo = true, long logTextMaximizeLength = 500000000)
+    public static void UseXFEConsoleLog(bool useMemoryLog = false, bool autoAddTimeInfo = true, long logTextMaximizeLength = -1)
     {
         EnableLog = true;
+        if (useMemoryLog)
+            Log = new XFEMemoryLog();
         Log.AutoAddTimeInfo = autoAddTimeInfo;
         Log.LogTextMaximizeLength = logTextMaximizeLength;
         SetConsoleOutput();
@@ -156,7 +158,57 @@ public static class XFEConsole
     /// </summary>
     /// <param name="text">文本</param>
     /// <returns></returns>
-    public static async Task WriteLine(string? text)
+    public static void WriteLine(string? text)
+    {
+        if (text is not null)
+        {
+            if (ShowInDebug)
+                Debug.WriteLine(text);
+            if (EnableLog)
+            {
+                var log = Log.WriteLine(text, out _);
+                if (ShowInLocalConsole)
+                    CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(log.ToString());
+            }
+            else if (ShowInLocalConsole)
+            {
+                CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(text);
+            }
+            foreach (var client in ClientList)
+                client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", true).Wait();
+        }
+    }
+    /// <summary>
+    /// 向已连接的XFE控制台输出一条消息
+    /// </summary>
+    /// <param name="text">文本</param>
+    /// <returns></returns>
+    public static void Write(string? text)
+    {
+        if (text is not null)
+        {
+            if (ShowInDebug)
+                Debug.WriteLine(text);
+            if (EnableLog)
+            {
+                var log = Log.Write(text, out var isHead);
+                if (ShowInLocalConsole && !Log.RecordOnlyOnWriteLine)
+                    CurrentConsoleTextWriter?.OriginalTextWriter.Write($"{(Log.AutoAddTimeInfo && isHead ? XFELogEntry.TimeToString(log.Time) : string.Empty)}{text}");
+            }
+            else if (ShowInLocalConsole)
+            {
+                CurrentConsoleTextWriter?.OriginalTextWriter.Write(text);
+            }
+            foreach (var client in ClientList)
+                client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", false).Wait();
+        }
+    }
+    /// <summary>
+    /// 向已连接的XFE控制台输出一条消息
+    /// </summary>
+    /// <param name="text">文本</param>
+    /// <returns></returns>
+    public static async Task WriteLineAsync(string? text)
     {
         if (text is not null)
         {
@@ -181,7 +233,7 @@ public static class XFEConsole
     /// </summary>
     /// <param name="text">文本</param>
     /// <returns></returns>
-    public static async Task Write(string? text)
+    public static async Task WriteAsync(string? text)
     {
         if (text is not null)
         {
@@ -190,7 +242,7 @@ public static class XFEConsole
             if (EnableLog)
             {
                 var log = Log.Write(text, out var isHead);
-                if (ShowInLocalConsole)
+                if (ShowInLocalConsole && !Log.RecordOnlyOnWriteLine)
                     CurrentConsoleTextWriter?.OriginalTextWriter.Write($"{(Log.AutoAddTimeInfo && isHead ? XFELogEntry.TimeToString(log.Time) : string.Empty)}{text}");
             }
             else if (ShowInLocalConsole)
