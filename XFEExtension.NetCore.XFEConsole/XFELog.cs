@@ -206,6 +206,7 @@ public abstract class XFELog
                     LogText = logText
                 };
                 CacheLog.Value = null;
+                AddLog(log);
                 return log;
             }
             CacheLog.Value!.Level = logLevel;
