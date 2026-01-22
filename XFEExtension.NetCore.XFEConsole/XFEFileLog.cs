@@ -53,7 +53,7 @@ public class XFEFileLog : XFELog
     }
 
     /// <inheritdoc/>
-    public override string Export() => File.ReadAllText(LogPath);
+    public override string Export() => new StreamReader(new FileStream(LogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)).ReadToEnd();
 
     /// <inheritdoc/>
     public override string Export(DateTime startDateTime, DateTime endDateTime)
