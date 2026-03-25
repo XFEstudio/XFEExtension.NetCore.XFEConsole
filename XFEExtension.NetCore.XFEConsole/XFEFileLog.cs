@@ -16,10 +16,7 @@ public class XFEFileLog : XFELog
     /// <inheritdoc/>
     public override List<XFELogEntry> Logs
     {
-        get
-        {
-            return ImportFromText(Export());
-        }
+        get => ImportFromText(Export());
         protected set => base.Logs = value;
     }
 

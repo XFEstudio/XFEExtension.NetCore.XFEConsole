@@ -21,7 +21,7 @@ public class XFEConsoleProgramClient(string ipAddress, string clientName, string
     /// <summary>
     /// 客户端
     /// </summary>
-    public CyberCommClient Client { get; set; } = new CyberCommClient(ipAddress);
+    public CyberCommClient Client { get; set; } = new(ipAddress);
     /// <summary>
     /// 客户端名称
     /// </summary>
@@ -42,29 +42,27 @@ public class XFEConsoleProgramClient(string ipAddress, string clientName, string
     {
         Client.Connected += Client_Connected;
         Client.MessageReceived += Client_MessageReceived;
-        Client.ClientWebSocket!.Options.SetRequestHeader(nameof(ClientName), ClientName);
-        Client.ClientWebSocket!.Options.SetRequestHeader(nameof(Password), Password);
-        Client.ClientWebSocket!.Options.SetRequestHeader(nameof(ClientID), ClientID);
+        Client.ClientWebSocket.Options.SetRequestHeader(nameof(ClientName), ClientName);
+        Client.ClientWebSocket.Options.SetRequestHeader(nameof(Password), Password);
+        Client.ClientWebSocket.Options.SetRequestHeader(nameof(ClientID), ClientID);
         _ = Client.StartCyberCommClient();
         if (Client.IsConnected)
             return true;
-        else
-            return await new XFEWaitTask<bool>(ref ConnectTrigger!);
+        return await new XFEWaitTask<bool>(ref ConnectTrigger!);
     }
 
-    private void Client_MessageReceived(object? sender, CyberCommClientEventArgs e)
+    private static void Client_MessageReceived(object? sender, CyberCommClientEventArgs e)
     {
         switch (e.MessageType)
         {
             case BackMessageType.Text:
-                break;
             case BackMessageType.Binary:
                 break;
             case BackMessageType.Error:
                 Debug.WriteLine(e.Exception);
                 break;
             default:
-                break;
+                throw new ArgumentOutOfRangeException();
         }
     }
 

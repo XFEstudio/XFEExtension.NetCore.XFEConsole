@@ -184,7 +184,7 @@ public abstract class XFELog
                     logText = split[1];
                     if (split.Length > 2)
                     {
-                        bool inverse = false;
+                        var inverse = false;
                         for (var i = 2; i < split.Length; i++)
                         {
                             logText += $"{(inverse ? ']' : '[')}{split[i]}";
@@ -195,31 +195,26 @@ public abstract class XFELog
             }
         }
         catch { }
-        if (RecordOnlyOnWriteLine)
+
+        if (!RecordOnlyOnWriteLine) return AddLog(logText, logLevel);
+        if (isHead)
         {
-            if (isHead)
+            var log = new XFELogEntry
             {
-                var log = new XFELogEntry
-                {
-                    Time = DateTime.Now,
-                    Level = logLevel,
-                    LogText = logText
-                };
-                CacheLog.Value = null;
-                AddLog(log);
-                return log;
-            }
-            CacheLog.Value!.Level = logLevel;
-            CacheLog.Value!.LogText += logText;
-            var returnLog = CacheLog.Value;
+                Time = DateTime.Now,
+                Level = logLevel,
+                LogText = logText
+            };
             CacheLog.Value = null;
-            AddLog(returnLog);
-            return returnLog;
+            AddLog(log);
+            return log;
         }
-        else
-        {
-            return AddLog(logText, logLevel);
-        }
+        CacheLog.Value!.Level = logLevel;
+        CacheLog.Value!.LogText += logText;
+        var returnLog = CacheLog.Value;
+        CacheLog.Value = null;
+        AddLog(returnLog);
+        return returnLog;
     }
 
     /// <summary>
@@ -269,7 +264,7 @@ public abstract class XFELog
             converters = [new("\n", "\\n", "n", "\\"), new("\r", "\\r", "r", "\\")];
         foreach (var log in logText.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (log is not null && XFELogEntry.FromString(log, converters) is XFELogEntry xFELogEntry)
+            if (XFELogEntry.FromString(log, converters) is { } xFELogEntry)
                 logs.Add(xFELogEntry);
         }
         return logs;

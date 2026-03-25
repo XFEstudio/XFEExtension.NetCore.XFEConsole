@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
 namespace XFEExtension.NetCore.XFEConsole;
 
@@ -30,21 +31,19 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void Write(char[]? buffer)
     {
-        if (buffer is not null)
+        if (buffer is null) return;
+        var stringBuilder = new StringBuilder();
+        foreach (var sigChar in buffer)
         {
-            var stringBuilder = new StringBuilder();
-            foreach (var sigChar in buffer)
-            {
-                stringBuilder.Append(sigChar);
-            }
-            XFEConsole.Write(stringBuilder.ToString());
+            stringBuilder.Append(sigChar);
         }
+        XFEConsole.Write(stringBuilder.ToString());
     }
 
     /// <inheritdoc/>
     public override void Write(char[] buffer, int index, int count)
     {
-        for (int i = index; i < count; i++)
+        for (var i = index; i < count; i++)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
@@ -55,13 +54,13 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void Write(decimal value)
     {
-        XFEConsole.Write(value.ToString());
+        XFEConsole.Write(value.ToString(CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc/>
     public override void Write(double value)
     {
-        XFEConsole.Write(value.ToString());
+        XFEConsole.Write(value.ToString(CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc/>
@@ -85,7 +84,7 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void Write(float value)
     {
-        XFEConsole.Write(value.ToString());
+        XFEConsole.Write(value.ToString(CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc/>
@@ -121,7 +120,7 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override async Task WriteAsync(char[] buffer, int index, int count)
     {
-        for (int i = index; i < count; i++)
+        for (var i = index; i < count; i++)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
@@ -156,21 +155,19 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void WriteLine(char[]? buffer)
     {
-        if (buffer is not null)
+        if (buffer is null) return;
+        var stringBuilder = new StringBuilder();
+        foreach (var sigChar in buffer)
         {
-            var stringBuilder = new StringBuilder();
-            foreach (var sigChar in buffer)
-            {
-                stringBuilder.Append(sigChar);
-            }
-            XFEConsole.WriteLine(stringBuilder.ToString());
+            stringBuilder.Append(sigChar);
         }
+        XFEConsole.WriteLine(stringBuilder.ToString());
     }
 
     /// <inheritdoc/>
     public override void WriteLine(char[] buffer, int index, int count)
     {
-        for (int i = index; i < count; i++)
+        for (var i = index; i < count; i++)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);
@@ -181,13 +178,13 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void WriteLine(decimal value)
     {
-        XFEConsole.WriteLine(value.ToString());
+        XFEConsole.WriteLine(value.ToString(CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc/>
     public override void WriteLine(double value)
     {
-        XFEConsole.WriteLine(value.ToString());
+        XFEConsole.WriteLine(value.ToString(CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc/>
@@ -216,7 +213,7 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override void WriteLine(float value)
     {
-        XFEConsole.WriteLine(value.ToString());
+        XFEConsole.WriteLine(value.ToString(CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc/>
@@ -258,7 +255,7 @@ public class XFEConsoleTextWriter(TextWriter originalTextWriter) : TextWriter
     /// <inheritdoc/>
     public override async Task WriteLineAsync(char[] buffer, int index, int count)
     {
-        for (int i = index; i < count; i++)
+        for (var i = index; i < count; i++)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append(buffer[i]);

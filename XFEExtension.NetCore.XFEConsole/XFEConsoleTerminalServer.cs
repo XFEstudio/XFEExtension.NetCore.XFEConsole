@@ -50,10 +50,7 @@ public class XFEConsoleTerminalServer
     public XFEConsoleTerminalServer(int port, bool localOnly = true, string password = "")
     {
         Password = password;
-        if (localOnly)
-            Server = new CyberCommServer($"http://localhost:{port}/");
-        else
-            Server = new CyberCommServer(port);
+        Server = localOnly ? new CyberCommServer($"http://localhost:{port}/") : new CyberCommServer(port);
         Server.ServerStarted += Server_ServerStarted;
         Server.ClientConnected += Server_ClientConnected;
         Server.ConnectionClosed += Server_ConnectionClosed;
@@ -86,18 +83,13 @@ public class XFEConsoleTerminalServer
             case BackMessageType.Error:
                 ErrorOccurred?.Invoke(ClientInfoDictionary[e.CurrentWebSocket], e.Exception!);
                 break;
-            default:
-                break;
         }
     }
 
     private void Server_ConnectionClosed(object? sender, CyberCommServerEventArgs e)
     {
-        if (ClientInfoDictionary.TryGetValue(e.CurrentWebSocket, out XFEConsoleClientInfo? clientInfo))
-        {
-            ClientInfoDictionary.Remove(e.CurrentWebSocket);
-            Disconnected?.Invoke(this, clientInfo);
-        }
+        if (!ClientInfoDictionary.Remove(e.CurrentWebSocket, out var clientInfo)) return;
+        Disconnected?.Invoke(this, clientInfo);
     }
 
     private async void Server_ClientConnected(object? sender, CyberCommServerEventArgs e)
@@ -108,13 +100,11 @@ public class XFEConsoleTerminalServer
             {
                 var password = e.WSHeader["Password"]!;
                 var clientName = e.WSHeader["ClientName"]!;
-                var clientUUID = e.WSHeader["ClientID"]!;
-                if (password == Password)
-                {
-                    var clientInfo = new XFEConsoleClientInfo(clientName, clientUUID, password, e);
-                    ClientInfoDictionary.Add(e.CurrentWebSocket, clientInfo);
-                    Connected?.Invoke(this, clientInfo);
-                }
+                var clientUuid = e.WSHeader["ClientID"]!;
+                if (password != Password) return;
+                var clientInfo = new XFEConsoleClientInfo(clientName, clientUuid, password, e);
+                ClientInfoDictionary.Add(e.CurrentWebSocket, clientInfo);
+                Connected?.Invoke(this, clientInfo);
                 return;
             }
         }

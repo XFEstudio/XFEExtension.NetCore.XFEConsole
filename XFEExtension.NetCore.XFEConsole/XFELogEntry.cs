@@ -28,13 +28,7 @@ public class XFELogEntry
     /// 转为日志文本（含时间）
     /// </summary>
     /// <returns></returns>
-    public string ToString(params EscapeConverter[] converters)
-    {
-        var logText = LogText;
-        foreach (var converter in converters)
-            logText = converter.Convert(logText);
-        return $"{TimeToString(Time)}{LevelToString(Level)}{logText}";
-    }
+    public string ToString(params EscapeConverter[] converters) => $"{TimeToString(Time)}{LevelToString(Level)}{converters.Aggregate(LogText, (current, converter) => converter.Convert(current))}";
 
     /// <summary>
     /// 日期转字符串
@@ -83,27 +77,23 @@ public class XFELogEntry
     public static XFELogEntry? FromString(string logString, params EscapeConverter[] converters)
     {
         var split = logString.Split(['[', ']'], StringSplitOptions.RemoveEmptyEntries);
-        if (split.Length > 2)
+        if (split.Length <= 2) return null;
+        var logText = split[2];
+        if (split.Length > 3)
         {
-            var logText = split[2];
-            if (split.Length > 3)
+            var inverse = false;
+            for (var i = 3; i < split.Length; i++)
             {
-                bool inverse = false;
-                for (var i = 3; i < split.Length; i++)
-                {
-                    logText += $"{(inverse ? ']' : '[')}{split[i]}";
-                    inverse = !inverse;
-                }
+                logText += $"{(inverse ? ']' : '[')}{split[i]}";
+                inverse = !inverse;
             }
-            foreach (var converter in converters)
-                logText = converter.Inverse(logText);
-            return new()
-            {
-                Time = StringToTime(split[0]),
-                Level = StringToLevel(split[1]),
-                LogText = logText
-            };
         }
-        return null;
+        logText = converters.Aggregate(logText, (current, converter) => converter.Inverse(current));
+        return new()
+        {
+            Time = StringToTime(split[0]),
+            Level = StringToLevel(split[1]),
+            LogText = logText
+        };
     }
 }
