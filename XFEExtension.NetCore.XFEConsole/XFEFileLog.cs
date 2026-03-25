@@ -48,7 +48,7 @@ public class XFEFileLog : XFELog
             CurrentLogFileStream = new FileStream(LogPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
             CurrentLogFileStream.Seek(0, SeekOrigin.End);
         }
-        CurrentLogFileStream.Write(Encoding.UTF8.GetBytes(xFELogEntry.ToString(Converters) + Environment.NewLine));
+        CurrentLogFileStream.Write(Encoding.UTF8.GetBytes(xFELogEntry.ToString(Converters) + '\n'));
         CurrentLogFileStream.Flush();
     }
 
@@ -71,7 +71,7 @@ public class XFEFileLog : XFELog
     public override void Import(string logText)
     {
         CurrentLogFileStream ??= new FileStream(LogPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
-        CurrentLogFileStream.Write(Encoding.UTF8.GetBytes(logText + Environment.NewLine));
+        CurrentLogFileStream.Write(Encoding.UTF8.GetBytes(logText + '\n'));
     }
 
     /// <inheritdoc/>
