@@ -19,7 +19,7 @@ await Parallel.ForAsync(0, 10000, async (i, ct) =>
 
 static async Task Do(int i)
 {
-    Console.Write($"这是第 {i} 条日志的上半部分");
+    Console.Write($"{RandomLogLevel()}这是第 {i} 条日志的上半部分");
     await Task.Delay(10);
     Console.WriteLine($"，这是第 {i} 条日志的下半部分");
 }
@@ -30,3 +30,9 @@ static async Task Do(int i)
 //{
 //    Console.WriteLine(XFEConsole.Log.Export(DateTime.MinValue, DateTime.MaxValue).Length);
 //}
+
+static string RandomLogLevel()
+{
+    var levels = new[] { "[INFO]", "[WARN]", "[ERROR]", "[DEBUG]", "[TRACE]", "[FATAL]" };
+    return levels[Random.Shared.Next(levels.Length)];
+}

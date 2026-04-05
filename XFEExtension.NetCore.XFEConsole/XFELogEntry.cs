@@ -1,4 +1,5 @@
 ﻿using XFEExtension.NetCore.XFETransform;
+using System.Text.RegularExpressions;
 
 namespace XFEExtension.NetCore.XFEConsole;
 
@@ -7,6 +8,10 @@ namespace XFEExtension.NetCore.XFEConsole;
 /// </summary>
 public class XFELogEntry
 {
+    private const string ResetColorCode = "\e[0m";
+    private const string TimeColorCode = "\e[90m";
+    private const string NumberColorCode = "\e[32m";
+
     /// <summary>
     /// 日志记录时间
     /// </summary>
@@ -24,11 +29,62 @@ public class XFELogEntry
     /// </summary>
     /// <returns></returns>
     public override string ToString() => $"{TimeToString(Time)}{LevelToString(Level)}{LogText.Replace("\n", "\\n").Replace("\r", "\\r")}";
+
+    /// <summary>
+    /// 转为日志文本（含时间）
+    /// </summary>
+    /// <param name="useConsoleColor">是否使用控制台颜色</param>
+    /// <returns></returns>
+    public string ToString(bool useConsoleColor)
+    {
+        var timeText = TimeToString(Time);
+        var levelText = LevelToString(Level);
+        var logText = LogText.Replace("\n", "\\n").Replace("\r", "\\r");
+
+        if (!useConsoleColor)
+            return $"{timeText}{levelText}{logText}";
+
+        var coloredLogText = HighlightNumbers(logText);
+        return $"{TimeColorCode}{timeText}{ResetColorCode}{LevelColorCode(Level)}{levelText}{ResetColorCode}{coloredLogText}{ResetColorCode}";
+    }
+
     /// <summary>
     /// 转为日志文本（含时间）
     /// </summary>
     /// <returns></returns>
     public string ToString(params EscapeConverter[] converters) => $"{TimeToString(Time)}{LevelToString(Level)}{converters.Aggregate(LogText, (current, converter) => converter.Convert(current))}";
+
+    /// <summary>
+    /// 转为日志文本（含时间）
+    /// </summary>
+    /// <param name="useConsoleColor">是否使用控制台颜色</param>
+    /// <param name="converters">转换器</param>
+    /// <returns></returns>
+    public string ToString(bool useConsoleColor, params EscapeConverter[] converters)
+    {
+        var timeText = TimeToString(Time);
+        var levelText = LevelToString(Level);
+        var logText = converters.Aggregate(LogText, (current, converter) => converter.Convert(current));
+
+        if (!useConsoleColor)
+            return $"{timeText}{levelText}{logText}";
+
+        var coloredLogText = HighlightNumbers(logText);
+        return $"{TimeColorCode}{timeText}{ResetColorCode}{LevelColorCode(Level)}{levelText}{ResetColorCode}{coloredLogText}{ResetColorCode}";
+    }
+
+    private static string LevelColorCode(LogLevel logLevel) => logLevel switch
+    {
+        LogLevel.Trace => "\e[90m",
+        LogLevel.Debug => "\e[36m",
+        LogLevel.Info => "\e[96m",
+        LogLevel.Warning => "\e[33m",
+        LogLevel.Error => "\e[31m",
+        LogLevel.Fatal => "\e[35m",
+        _ => "\e[96m"
+    };
+
+    private static string HighlightNumbers(string logText) => Regex.Replace(logText, "\\d+", m => $"{NumberColorCode}{m.Value}{ResetColorCode}");
 
     /// <summary>
     /// 日期转字符串

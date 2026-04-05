@@ -22,16 +22,7 @@ public abstract class XFELog
     /// <summary>
     /// 当前日志文本长度
     /// </summary>
-    public long CurrentLogsTextLength
-    {
-        get
-        {
-            long length = 0;
-            foreach (var entry in Logs)
-                length += entry.LogText.Length;
-            return length;
-        }
-    }
+    public long CurrentLogsTextLength => Logs.Aggregate<XFELogEntry?, long>(0, (current, entry) => current + entry?.LogText.Length ?? 0);
     /// <summary>
     /// 日志路径
     /// </summary>
@@ -137,27 +128,22 @@ public abstract class XFELog
             }
         }
         catch { }
-        if (RecordOnlyOnWriteLine)
+        if (!RecordOnlyOnWriteLine) return AddLog(logText, logLevel);
+        if (isHead)
         {
-            if (isHead)
+            var log = new XFELogEntry
             {
-                var log = new XFELogEntry
-                {
-                    Time = DateTime.Now,
-                    Level = logLevel,
-                    LogText = logText
-                };
-                CacheLog.Value = log;
-                return log;
-            }
-            CacheLog.Value!.Level = logLevel;
-            CacheLog.Value!.LogText += logText;
-            return CacheLog.Value;
+                Time = DateTime.Now,
+                Level = logLevel,
+                LogText = logText
+            };
+            CacheLog.Value = log;
+            return log;
         }
-        else
-        {
-            return AddLog(logText, logLevel);
-        }
+        CacheLog.Value!.Level = logLevel;
+        CacheLog.Value!.LogText += logText;
+        return CacheLog.Value;
+
     }
 
     /// <summary>

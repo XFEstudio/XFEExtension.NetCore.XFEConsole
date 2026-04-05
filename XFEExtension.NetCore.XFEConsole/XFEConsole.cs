@@ -122,10 +122,8 @@ public static class XFEConsole
             ClientList.Add(client);
             return true;
         }
-        else
-        {
-            return false;
-        }
+
+        return false;
     }
     /// <summary>
     /// 输出对象信息
@@ -167,7 +165,7 @@ public static class XFEConsole
         {
             var log = Log.WriteLine(text, out _);
             if (ShowInLocalConsole)
-                CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(log.ToString());
+                CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(log.ToString(UseConsoleColor));
         }
         else if (ShowInLocalConsole)
         {
@@ -211,9 +209,9 @@ public static class XFEConsole
             Debug.WriteLine(text);
         if (EnableLog)
         {
-            var log = Log.WriteLine(text, out var isHead);
+            var log = Log.WriteLine(text, out _);
             if (ShowInLocalConsole)
-                await (CurrentConsoleTextWriter?.OriginalTextWriter.WriteLineAsync($"{(Log.AutoAddTimeInfo && isHead ? XFELogEntry.TimeToString(log.Time) : string.Empty)}{text}") ?? Task.CompletedTask);
+                await (CurrentConsoleTextWriter?.OriginalTextWriter.WriteLineAsync(log.ToString(UseConsoleColor)) ?? Task.CompletedTask);
         }
         else if (ShowInLocalConsole)
         {
