@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using XFEExtension.NetCore.XFEConsole.Options;
+using XFEExtension.NetCore.XFEConsole.Utilities.Helpers;
 using XFEExtension.NetCore.XFETransform;
 using XFEExtension.NetCore.XFETransform.ObjectInfoAnalyzer;
 using XFEExtension.NetCore.XFETransform.StringConverter;
@@ -77,14 +79,34 @@ public static class XFEConsole
     /// <summary>
     /// 使用XFE控制台日志
     /// </summary>
-    public static void UseXFEConsoleLog(bool useMemoryLog = false, bool autoAddTimeInfo = true, long logTextMaximizeLength = -1)
+    public static void UseXFEConsoleLog(XFEConsoleLogOptions xFEConsoleLogOptions)
     {
         EnableLog = true;
-        if (useMemoryLog)
-            Log = new XFEMemoryLog();
-        Log.AutoAddTimeInfo = autoAddTimeInfo;
-        Log.LogTextMaximizeLength = logTextMaximizeLength;
+        switch (xFEConsoleLogOptions.LogType)
+        {
+            case Models.LogType.MemoryLog:
+                Log = new XFEMemoryLog();
+                break;
+            case Models.LogType.FileLog:
+                break;
+            default:
+                break;
+        }
+        Log.AutoAddTimeInfo = xFEConsoleLogOptions.AutoApplyTimeInfo;
+        Log.LogTextMaximizeLength = xFEConsoleLogOptions.LogTextMaximizeLength;
+        if (xFEConsoleLogOptions.UseAnsiConsoleEncoding)
+            ConsoleAnsi.Enable();
         SetConsoleOutput();
+    }
+    /// <summary>
+    /// 使用XFE控制台日志
+    /// </summary>
+    /// <param name="optionBuilder"></param>
+    public static void UseXFEConsoleLog(Action<XFEConsoleLogOptions> optionBuilder)
+    {
+        var options = new XFEConsoleLogOptions();
+        optionBuilder(options);
+        UseXFEConsoleLog(options);
     }
     /// <summary>
     /// 停止XFE控制台
