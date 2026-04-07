@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.2.0</Version>
+    <Version>2.2.1</Version>
     <Authors>XFEstudio</Authors>
     <Company>寰宇朽力网络科技</Company>
     <Description>XFEConsole是一个可以运行用户进行远程输出的调试辅助工具，需要配合XFE工具箱来使用，当然也可以根据本DLL内的架构搭建一个调试工具</Description>
@@ -15,9 +15,9 @@
     <RepositoryUrl>https://github.com/XFEstudio/XFEExtension.NetCore.XFEConsole.git</RepositoryUrl>
     <PackageTags>XFE;Console;Test;Out;Output;Remote;</PackageTags>
     <PackageReleaseNotes>
-      扩展日志系统：支持多类型与ANSI控制台输出
+      使 UseXFEConsoleLog 支持可选参数并升级版本号
 
-      本次更新引入 LogType 枚举和 XFEConsoleLogOptions 配置类，支持内存日志与文件日志类型（FileLog 预留），并优化 UseXFEConsoleLog 初始化方式。新增 ConsoleAnsi 辅助类，自动启用 Windows 控制台 ANSI 转义序列，提升日志输出兼容性。项目版本升级至 2.2.0，允许 unsafe 代码块。整体提升日志系统的可配置性与扩展性。
+      将 UseXFEConsoleLog 的参数 xFEConsoleLogOptions 改为可选，未传入时自动使用默认配置，提升方法易用性；同时将项目版本号提升至 2.2.1。
     </PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>

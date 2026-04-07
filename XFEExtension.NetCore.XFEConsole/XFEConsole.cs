@@ -79,16 +79,16 @@ public static class XFEConsole
     /// <summary>
     /// 使用XFE控制台日志
     /// </summary>
-    public static void UseXFEConsoleLog(XFEConsoleLogOptions xFEConsoleLogOptions)
+    public static void UseXFEConsoleLog(XFEConsoleLogOptions? xFEConsoleLogOptions = null)
     {
         EnableLog = true;
+        xFEConsoleLogOptions ??= new XFEConsoleLogOptions();
         switch (xFEConsoleLogOptions.LogType)
         {
             case Models.LogType.MemoryLog:
                 Log = new XFEMemoryLog();
                 break;
             case Models.LogType.FileLog:
-                break;
             default:
                 break;
         }
