@@ -1,61 +1,149 @@
 # XFEExtension.NetCore.XFEConsole
 
-## 简述
+[![NuGet Version](https://img.shields.io/nuget/v/XFEExtension.NetCore.XFEConsole.svg)](https://www.nuget.org/packages/XFEExtension.NetCore.XFEConsole/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/XFEExtension.NetCore.XFEConsole.svg)](https://www.nuget.org/packages/XFEExtension.NetCore.XFEConsole/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/download)
 
-XFEExtension.NetCore.XFEConsole是一个可以允许用户进行远程输出的调试辅助工具，需要配合XFE工具箱来使用，当然也可以根据本DLL内的架构搭建一个调试工具
+> 🌐 English | [中文](README_zh.md)
 
-## 远程控制台
+## Overview
 
-### 输出至远程控制台
+XFEExtension.NetCore.XFEConsole is a debugging aid that allows remote console output. It is designed to work with the XFE Toolbox, but you can also build your own debugging tool based on the architecture provided in this library.
 
-```csharp
-await XFEConsole.UseXFEConsole(3280);   // 使用XFE控制台并连接端口为3280的控制台调试终端
-                                        // await任务返回一个bool值，该值指示是否与调试终端连接成功
+## Installation
 
-XFEConsole.ShowInDebug = true;          // 是否在本地调试的Debug中展示，默认为 true
-XFEConsole.UseConsoleColor = true;      // 使用控制台颜色，默认为 true
-XFEConsole.ShowInLocalConsole = true;   // 是否在本地控制台中显示，默认为 false
-XFEConsole.AutoAnalyzeObject = true;    // 是否自动解析对象，而非直接输出对象的.ToString()方法，默认为 true
-
-Console.WriteLine("Hello World!");      // 这条语句会在远程控制台中输出Hello World!
+```shell
+dotnet add package XFEExtension.NetCore.XFEConsole
 ```
 
-### 配合XUnit测试框架
+---
+
+## Remote Console
+
+### Connect to the Remote Console
+
+```csharp
+// Connect to a local console debug terminal on the given port (port and password are optional)
+bool connected = await XFEConsole.UseXFEConsole(port: 3280, password: "");
+
+// Connect to a remote console debug terminal at a specific IP address
+bool connected = await XFEConsole.UseXFEConsole("ws://192.168.1.100:3280/", "MyApp", Guid.NewGuid().ToString(), "password");
+```
+
+Once connected, all `Console.WriteLine` and `Console.Write` output is automatically forwarded to the remote console.
+
+### Properties
+
+```csharp
+XFEConsole.ShowInDebug = true;          // Show output in local Debug; default is true
+XFEConsole.UseConsoleColor = true;      // Use console colors; default is true
+XFEConsole.ShowInLocalConsole = true;   // Show output in local console; default is true
+XFEConsole.AutoAnalyzeObject = true;    // Auto-analyze objects instead of calling .ToString(); default is true
+```
+
+### Stop the XFE Console
+
+```csharp
+await XFEConsole.StopXFEConsole();      // Close all remote connections and restore the original console output
+```
+
+### Connect Only (without redirecting output)
+
+```csharp
+// Establish a connection without modifying Console's output stream
+bool connected = await XFEConsole.ConnectConsole("ws://localhost:3280/", "MyApp", Guid.NewGuid().ToString(), "");
+```
+
+### Direct Write Methods
+
+```csharp
+XFEConsole.WriteLine("Hello World!");              // Synchronous write line
+XFEConsole.Write("Hello ");                        // Synchronous write (no newline)
+await XFEConsole.WriteLineAsync("Hello World!");   // Asynchronous write line
+await XFEConsole.WriteAsync("Hello ");             // Asynchronous write (no newline)
+```
+
+### Output Object Information
+
+```csharp
+await XFEConsole.WriteObject(myObject);                                         // Output object details
+await XFEConsole.WriteObject(myObject, onlyProperty: true, onlyPublic: true);  // Only public properties
+await XFEConsole.WriteObject(myObject, remarkName: "User Object");              // Custom remark name
+```
+
+### Use with XUnit Test Framework
 
 ```csharp
 class Program
 {
-    [UseXFEConsole]
+    [UseXFEConsole]          // Use default port 3280
+    [UseXFEConsole(3280)]    // Or specify the port explicitly
     [SMTest]
     static void TestMethod()
     {
-        Console.WriteLine("使用XUnit框架输出");
+        Console.WriteLine("Output via XUnit framework");
     }
 }
 ```
 
 ---
 
-## 日志
+## Logging
 
-### 记录日志
+### Enable Logging
+
 ```csharp
-XFEConsole.UseXFEConsoleLog();          // 使用XFE日志记录每一次Console.Write或者WriteLine的内容
-Console.WriteLine("Hello World!");      // 会直接在日志中记录Hello World!
+// Enable logging with default settings (file log, timestamps enabled)
+XFEConsole.UseXFEConsoleLog();
 
-Console.Write("Hello");                 // 缓存直到下一个Console.WriteLine的出现
-Console.WriteLine(" World!");           // 此时才会记录Hello World!
+// Configure with an Action builder
+XFEConsole.UseXFEConsoleLog(options =>
+{
+    options.LogType = LogType.MemoryLog;        // Use in-memory log (default: FileLog)
+    options.AutoApplyTimeInfo = true;           // Automatically include timestamps (default: true)
+    options.UseAnsiConsoleEncoding = true;      // Enable ANSI encoding (default: true)
+    options.LogTextMaximizeLength = 1024 * 10;  // Max log length; -1 = unlimited (default: -1)
+});
 
-Console.WriteLine("[DEBUG]This is a debug message");                // 会记录级别为DEBUG的日志
-Console.WriteLine("[INFO]This is a info");                          // 会记录级别为INFO的日志
-Console.WriteLine("[TRACE]Throw at Main() on line:24 position:25"); // 会记录级别为TRACE的日志
-Console.WriteLine("[ERROR]Exception thrown");                       // 会记录级别为ERROR的日志
-Console.WriteLine("[FATAL]Application crashed... unknown reason");  // 会记录级别为FATAL的日志
+// Or pass an options object directly
+var logOptions = new XFEConsoleLogOptions
+{
+    LogType = LogType.FileLog,
+    AutoApplyTimeInfo = true
+};
+XFEConsole.UseXFEConsoleLog(logOptions);
 ```
 
-### 导入导出日志
+### Write Logs
+
 ```csharp
-var log = XFEConsole.Log.Export();      // 导出日志为文本
-XFEConsole.Log.Clear()                  // 清除全部日志
-XFEConsole.Log.Import(log);             // 导入日志文本
+Console.WriteLine("Hello World!");       // Recorded directly in the log
+
+Console.Write("Hello");                  // Buffered until the next WriteLine
+Console.WriteLine(" World!");            // Now "Hello World!" is recorded
+
+Console.WriteLine("[DEBUG]This is a debug message");                // Logged at DEBUG level
+Console.WriteLine("[INFO]This is an info message");                 // Logged at INFO level
+Console.WriteLine("[TRACE]Throw at Main() on line:24 position:25"); // Logged at TRACE level
+Console.WriteLine("[WARN]Low memory warning");                      // Logged at WARN level
+Console.WriteLine("[ERROR]Exception thrown");                       // Logged at ERROR level
+Console.WriteLine("[FATAL]Application crashed... unknown reason");  // Logged at FATAL level
+```
+
+### Configure Log Path
+
+```csharp
+XFEConsole.Log.LogPath = "my-app.log";  // Set the log file path (file log only)
+```
+
+### Export, Import, and Clear Logs
+
+```csharp
+string logText  = XFEConsole.Log.Export();                              // Export all logs as text
+string rangeLog = XFEConsole.Log.Export(DateTime.Today, DateTime.Now); // Export by date range
+string original = XFEConsole.Log.ExportOriginal();                      // Export raw logs (no escaping)
+
+XFEConsole.Log.Import(logText);                                         // Import log text
+XFEConsole.Log.Clear();                                                 // Clear all logs
 ```
