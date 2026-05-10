@@ -1,11 +1,11 @@
 # XFEExtension.NetCore.XFEConsole
 
-[![NuGet Version](https://img.shields.io/nuget/v/XFEExtension.NetCore.XFEConsole.svg)](https://www.nuget.org/packages/XFEExtension.NetCore.XFEConsole/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/XFEExtension.NetCore.XFEConsole.svg)](https://www.nuget.org/packages/XFEExtension.NetCore.XFEConsole/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blueviolet)](https://dotnet.microsoft.com/download)
+[![NuGet](https://img.shields.io/nuget/v/XFEExtension.NetCore.XFEConsole?label=NuGet&logo=NuGet)](https://www.nuget.org/packages/XFEExtension.NetCore.XFEConsole/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/XFEExtension.NetCore.XFEConsole?label=Downloads&logo=NuGet)](https://www.nuget.org/packages/XFEExtension.NetCore.XFEConsole/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/download)
 
-> 🌐 [English](README.md) | 中文
+> 🌐 [English](https://github.com/XFEstudio/XFEExtension.NetCore.XFEConsole/blob/master/README.md) | 中文
 
 ## 简述
 
