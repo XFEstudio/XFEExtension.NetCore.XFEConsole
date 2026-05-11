@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Package version to publish, for example 3.0.9
+        description: Package version to publish, for example 1.0.0
         required: true
         type: string
       skip_nuget_org:
@@ -60,10 +60,10 @@ jobs:
           echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Restore
-        run: dotnet restore ${{ env.PROJECT_PATH }}
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
 
       - name: Build
-        run: dotnet build ${{ env.PROJECT_PATH }} --configuration Release --no-restore -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:Version=${{ env.PACKAGE_VERSION }} -p:PackageVersion=${{ env.PACKAGE_VERSION }}
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:Version=${{ env.PACKAGE_VERSION }} -p:PackageVersion=${{ env.PACKAGE_VERSION }}
 
       - name: Pack
         run: dotnet pack ${{ env.PROJECT_PATH }} --configuration Release --no-build --no-restore --output ${{ env.PACKAGE_OUTPUT_DIR }} -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:Version=${{ env.PACKAGE_VERSION }} -p:PackageVersion=${{ env.PACKAGE_VERSION }}
@@ -77,14 +77,19 @@ jobs:
 
       - name: Publish to GitHub Packages
         shell: pwsh
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: |
           $packages = Get-ChildItem -Path "${{ env.PACKAGE_OUTPUT_DIR }}" -Filter *.nupkg -File
           if (-not $packages) {
             throw "No .nupkg files found in ${{ env.PACKAGE_OUTPUT_DIR }}"
           }
-
+      
           foreach ($package in $packages) {
-            dotnet nuget push $package.FullName --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
+            dotnet nuget push $package.FullName `
+              --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" `
+              --api-key "$env:GITHUB_PACKAGES_TOKEN" `
+              --skip-duplicate
           }
 
       - name: Publish to NuGet.org
@@ -101,18 +106,17 @@ jobs:
           }
 
       - name: Create GitHub Release
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: XFEExtension.NetCore.XFEConsole ${{ github.ref_name }}
+          tag_name: ${{ env.PACKAGE_VERSION }}
+          name: V${{ env.PACKAGE_VERSION }}
           generate_release_notes: true
           append_body: true
           body: |
             ## Package feeds
 
             - NuGet.org
-            - GitHub Packages: `https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json`
+            - GitHub Packages
           files: ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg
           fail_on_unmatched_files: true
           prerelease: ${{ contains(env.PACKAGE_VERSION, '-') }}
