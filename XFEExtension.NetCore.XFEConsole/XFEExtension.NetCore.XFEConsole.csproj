@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.3.0</Version>
+    <Version>2.4.0</Version>
     <Authors>XFEstudio</Authors>
     <Company>寰宇朽力网络科技</Company>
     <Description>XFEConsole 提供远程调试输出、日志、Windows Terminal/VT 控制、交互画布、进度条和标题艺术字功能</Description>
