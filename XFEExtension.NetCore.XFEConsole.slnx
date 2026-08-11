@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="XFEExtension.NetCore.XFEConsole.Test/XFEExtension.NetCore.XFEConsole.Test.csproj">
+    <BuildDependency Project="XFEExtension.NetCore.XFEConsole/XFEExtension.NetCore.XFEConsole.csproj" />
+  </Project>
+  <Project Path="XFEExtension.NetCore.XFEConsole/XFEExtension.NetCore.XFEConsole.csproj" />
+</Solution>
