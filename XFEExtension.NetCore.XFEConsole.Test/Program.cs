@@ -40,6 +40,10 @@ static void RunSelfTests()
         ("RGB style", () => Contains("38;2;1;2;3", new XFETerminalStyle { Foreground = XFETerminalColor.FromRgb(1, 2, 3) }.ToSequence())),
         ("Legacy title art", TestLegacyTitleArt),
         ("Every title art style", TestEveryTitleArtStyle),
+        ("FIGlet font catalog", TestFigletFontCatalog),
+        ("Outlined title art", TestOutlinedTitleArt),
+        ("3D title art", TestThreeDimensionalTitleArt),
+        ("Layered title art color", TestLayeredTitleArtColor),
         ("Modern title art color", TestModernTitleArt),
         ("Unicode title fallback", TestUnicodeTitleArt),
         ("Canvas plain rendering", TestCanvas),
@@ -96,7 +100,98 @@ static void TestModernTitleArt()
     });
     Contains("\x1b[", art);
     Contains("█", art);
-    Contains("░", art);
+    Contains("▓", art);
+}
+
+static void TestFigletFontCatalog()
+{
+    if (XFETerminalTitleArt.AvailableFigletFonts.Count < 250)
+        throw new InvalidOperationException("Expected at least 250 bundled FIGlet fonts.");
+    foreach (var font in new[] { "Doom", "Epic", "Gothic", "Modular", "Rectangles", "Relief" })
+    {
+        if (!XFETerminalTitleArt.IsFigletFontAvailable(font))
+            throw new InvalidOperationException($"Expected FIGlet font {font}.");
+    }
+    if (!XFETerminalTitleArt.IsFigletFontAvailable("banner-3d"))
+        throw new InvalidOperationException("Normalized FIGlet font lookup failed.");
+
+    var art = XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
+    {
+        Font = XFETerminalArtFont.Epic,
+        Style = XFETerminalArtStyle.Compact,
+        Compatibility = XFETerminalCompatibility.Legacy
+    });
+    Contains("_", art);
+    if (art.Split(Environment.NewLine).Length < 5)
+        throw new InvalidOperationException("Epic did not render as multi-line FIGlet art.");
+
+    var custom = XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
+    {
+        FigletFontName = "banner-3d",
+        Compatibility = XFETerminalCompatibility.Legacy
+    });
+    if (string.IsNullOrWhiteSpace(custom))
+        throw new InvalidOperationException("Custom FIGlet font rendered an empty string.");
+
+    Throws<ArgumentException>(() => XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
+    {
+        FigletFontName = "does-not-exist"
+    }));
+}
+
+static void TestOutlinedTitleArt()
+{
+    var art = XFETerminalTitleArt.GeneratePlain("I", new XFETerminalTitleArtOptions
+    {
+        Style = XFETerminalArtStyle.Compact,
+        Compatibility = XFETerminalCompatibility.Legacy,
+        OutlineWidth = 1,
+        OutlineCharacter = '+'
+    });
+    Equal(string.Join(Environment.NewLine,
+        "+++++++",
+        "+#####+",
+        "+++#+++",
+        "  +#+",
+        "+++#+++",
+        "+#####+",
+        "+++++++"), art);
+    DoesNotContain("\x1b", art);
+}
+
+static void TestThreeDimensionalTitleArt()
+{
+    var art = XFETerminalTitleArt.GeneratePlain("I", new XFETerminalTitleArtOptions
+    {
+        Style = XFETerminalArtStyle.Compact,
+        Compatibility = XFETerminalCompatibility.Legacy,
+        ExtrudeDepth = 2,
+        ExtrudeDirection = XFETerminalArtExtrudeDirection.Right,
+        ExtrudeCharacter = '>'
+    });
+    Equal(string.Join(Environment.NewLine,
+        "#####>>",
+        "  #>>",
+        "  #>>",
+        "  #>>",
+        "#####>>"), art);
+}
+
+static void TestLayeredTitleArtColor()
+{
+    var art = XFETerminalTitleArt.Generate("I", new XFETerminalTitleArtOptions
+    {
+        Style = XFETerminalArtStyle.Compact,
+        Compatibility = XFETerminalCompatibility.Modern,
+        Color = XFETerminalColor.FromRgb(1, 2, 3),
+        OutlineWidth = 1,
+        OutlineColor = XFETerminalColor.FromRgb(4, 5, 6),
+        ExtrudeDepth = 1,
+        ExtrudeColor = XFETerminalColor.FromRgb(7, 8, 9)
+    });
+    Contains("38;2;1;2;3", art);
+    Contains("38;2;4;5;6", art);
+    Contains("38;2;7;8;9", art);
 }
 
 static void TestEveryTitleArtStyle()
@@ -162,6 +257,38 @@ static void ShowArt()
             Palette = XFETerminalArtPalette.Rainbow
         });
     }
+
+    foreach (var font in new[]
+             {
+                 XFETerminalArtFont.AnsiShadow,
+                 XFETerminalArtFont.Doom,
+                 XFETerminalArtFont.Epic,
+                 XFETerminalArtFont.Gothic,
+                 XFETerminalArtFont.Modular,
+                 XFETerminalArtFont.Relief
+             })
+    {
+        Console.WriteLine($"\nFIGlet {font}");
+        XFETerminalTitleArt.Write("XFE", new XFETerminalTitleArtOptions
+        {
+            Font = font,
+            Style = XFETerminalArtStyle.Compact,
+            Palette = XFETerminalArtPalette.Ocean
+        });
+    }
+
+    Console.WriteLine("\nOutlined + 3D");
+    XFETerminalTitleArt.Write("XFE", new XFETerminalTitleArtOptions
+    {
+        Font = XFETerminalArtFont.Doom,
+        Style = XFETerminalArtStyle.ThreeDimensional,
+        Palette = XFETerminalArtPalette.Sunset,
+        OutlineWidth = 1,
+        OutlineColor = XFETerminalColor.FromRgb(0xff, 0xee, 0xc2),
+        ExtrudeDepth = 4,
+        ExtrudeColor = XFETerminalColor.FromRgb(0x60, 0x24, 0x60),
+        ExtrudeDirection = XFETerminalArtExtrudeDirection.DownRight
+    });
 
     XFETerminalTitleArt.Write("终端艺术字", new XFETerminalTitleArtOptions
     {

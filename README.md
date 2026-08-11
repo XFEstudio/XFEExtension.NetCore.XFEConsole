@@ -109,29 +109,48 @@ For custom loops, compose `XFETerminalSession`, `XFETerminalCanvas`, and `XFETer
 
 ### Colored title art
 
-Seven styles are built in (`Block`, `Compact`, `Dots`, `Outline`, `Shadow`, `Slant`, and `Framed`) together with cyan, rainbow, ocean, sunset, forest, fire, and neon palettes. Bitmap styles cover A-Z, 0-9, and common punctuation. Other Unicode text automatically uses a frame so that CJK and emoji are preserved.
+In addition to the backward-compatible 5x5 pixel font, the library now bundles more than 250 FIGlet fonts. Common choices are exposed through `Standard`, `Big`, `Slant`, `AnsiShadow`, `Doom`, `Epic`, `Gothic`, `Ivrit`, `Modular`, `Ogre`, `Rectangles`, `Relief`, `Isometric`, and `Larry3D`; `FigletFontName` accepts any name returned by `AvailableFigletFonts`.
+
+Fonts and effects are independent and composable. `OutlineWidth` creates a real outer stroke, while `ExtrudeDepth` and the eight `ExtrudeDirection` values create layered 3D extrusion. Fill, outline, and extrusion have separate palette/color controls. `Outline` supplies a one-cell default stroke and `ThreeDimensional` supplies a three-cell down-right extrusion.
 
 ```csharp
-string plain = XFETerminalTitleArt.GeneratePlain(
-    "XFE",
-    XFETerminalArtStyle.Shadow,
-    XFETerminalCompatibility.Legacy);
+// Plain text contains the shape and effects, but never ANSI escape sequences.
+string plain = XFETerminalTitleArt.GeneratePlain("HELLO", new XFETerminalTitleArtOptions
+{
+    Font = XFETerminalArtFont.Epic,
+    Style = XFETerminalArtStyle.Compact,
+    OutlineWidth = 1,
+    OutlineCharacter = '+',
+    ExtrudeDepth = 2,
+    ExtrudeCharacter = '#',
+    Compatibility = XFETerminalCompatibility.Legacy
+});
 
 string terminalReady = XFEConsole.GenerateTitleArt("XFE", new XFETerminalTitleArtOptions
 {
-    Style = XFETerminalArtStyle.Outline,
-    Palette = XFETerminalArtPalette.Rainbow
+    Font = XFETerminalArtFont.Doom,
+    Style = XFETerminalArtStyle.ThreeDimensional,
+    Palette = XFETerminalArtPalette.Sunset,
+    OutlineWidth = 1,
+    OutlineColor = XFETerminalColor.FromRgb(0xff, 0xee, 0xc2),
+    ExtrudeDepth = 4,
+    ExtrudeColor = XFETerminalColor.FromRgb(0x60, 0x24, 0x60),
+    ExtrudeDirection = XFETerminalArtExtrudeDirection.DownRight,
+    Compatibility = XFETerminalCompatibility.Modern
 });
 
-XFEConsole.WriteTitleArt("XFE", new XFETerminalTitleArtOptions
+XFEConsole.WriteTitleArt("HELLO", new XFETerminalTitleArtOptions
 {
-    Style = XFETerminalArtStyle.Block,
+    FigletFontName = "Banner3D",
     Palette = XFETerminalArtPalette.Ocean,
     Compatibility = XFETerminalCompatibility.Auto
 });
+
+foreach (string fontName in XFETerminalTitleArt.AvailableFigletFonts)
+    Console.WriteLine(fontName);
 ```
 
-Modern mode uses Unicode drawing characters and ANSI true color. Legacy mode returns clean ASCII and uses `ConsoleColor` when writing directly.
+Modern mode uses Unicode effect characters and ANSI true color, including distinct colors within a single row. Legacy mode switches effects to ASCII and uses `ConsoleColor` when writing directly. FIGlet fonts primarily cover Latin letters, digits, and common punctuation; unsupported CJK or emoji text falls back to a frame that preserves the original characters.
 
 Run the feature demos and deterministic checks with:
 

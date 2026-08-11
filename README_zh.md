@@ -122,32 +122,50 @@ await XFETerminalGame.RunAsync((game, cancellationToken) =>
 
 ### 彩色标题艺术字
 
-内置 `Block`、`Compact`、`Dots`、`Outline`、`Shadow`、`Slant` 和 `Framed` 七种样式，以及 `Cyan`、`Rainbow`、`Ocean`、`Sunset`、`Forest`、`Fire`、`Neon` 配色。点阵字体支持 A-Z、0-9 和常用符号；中文、Emoji 等字符会自动使用保留原文字的边框样式。
+除兼容旧版的 5x5 点阵字体外，现已内置 250 多种 FIGlet 字体。常用字体可通过 `Standard`、`Big`、`Slant`、`AnsiShadow`、`Doom`、`Epic`、`Gothic`、`Ivrit`、`Modular`、`Ogre`、`Rectangles`、`Relief`、`Isometric`、`Larry3D` 等枚举直接选择；也可用 `FigletFontName` 按名称访问完整字体库。`AvailableFigletFonts` 返回所有可用名称。
+
+字体与效果可以自由组合：`OutlineWidth` 生成真正的外描边，`ExtrudeDepth` 和八种 `ExtrudeDirection` 生成多层立体挤出；正面、描边和挤出层分别由 `Color`/`Palette`、`OutlineColor`、`ExtrudeColor` 控制。`Outline` 样式默认生成 1 格描边，`ThreeDimensional` 默认生成 3 格右下挤出。
 
 ```csharp
-// 生成字符串，开发者自行存储或输出
-string plain = XFETerminalTitleArt.GeneratePlain(
-    "XFE",
-    XFETerminalArtStyle.Shadow,
-    XFETerminalCompatibility.Legacy);
+// 返回纯文本：包含字形、描边和立体层，但绝不包含 ANSI 控制符
+string plain = XFETerminalTitleArt.GeneratePlain("HELLO", new XFETerminalTitleArtOptions
+{
+    Font = XFETerminalArtFont.Epic,
+    Style = XFETerminalArtStyle.Compact,
+    OutlineWidth = 1,
+    OutlineCharacter = '+',
+    ExtrudeDepth = 2,
+    ExtrudeCharacter = '#',
+    Compatibility = XFETerminalCompatibility.Legacy
+});
 
+// 生成可自行输出的 Windows Terminal 真彩字符串
 string terminalReady = XFEConsole.GenerateTitleArt("XFE", new XFETerminalTitleArtOptions
 {
-    Style = XFETerminalArtStyle.Outline,
-    Palette = XFETerminalArtPalette.Rainbow,
-    Compatibility = XFETerminalCompatibility.Modern
+    Font = XFETerminalArtFont.Doom,
+    Style = XFETerminalArtStyle.ThreeDimensional,
+    Palette = XFETerminalArtPalette.Sunset,
+    OutlineWidth = 1,
+    OutlineColor = XFETerminalColor.FromRgb(0xff, 0xee, 0xc2),
+    ExtrudeDepth = 4,
+    ExtrudeColor = XFETerminalColor.FromRgb(0x60, 0x24, 0x60),
+    ExtrudeDirection = XFETerminalArtExtrudeDirection.DownRight,
+    Compatibility = XFETerminalCompatibility.Modern,
 });
 
 // 直接显示；Auto 自动区分新旧终端
-XFEConsole.WriteTitleArt("终端艺术字", new XFETerminalTitleArtOptions
+XFEConsole.WriteTitleArt("HELLO", new XFETerminalTitleArtOptions
 {
-    Style = XFETerminalArtStyle.Framed,
+    FigletFontName = "Banner3D", // 完整字体目录中的任意名称
     Palette = XFETerminalArtPalette.Ocean,
     Compatibility = XFETerminalCompatibility.Auto
 });
+
+foreach (string fontName in XFETerminalTitleArt.AvailableFigletFonts)
+    Console.WriteLine(fontName);
 ```
 
-现代模式使用 Unicode 绘图字符和 ANSI 真彩色；传统模式返回纯 ASCII 字符串，直接显示时通过 `ConsoleColor` 着色，不会把转义字符打印到旧终端。
+现代模式使用 Unicode 效果字符与 ANSI 真彩色，并允许一行内分别呈现正面、描边和立体层颜色；传统模式自动改用 ASCII 效果字符，直接显示时映射至 `ConsoleColor`，不会把转义字符打印到旧终端。FIGlet 字体主要覆盖英文、数字和常用标点；不支持的中文、Emoji 等字符会自动使用保留原文字的边框样式。
 
 示例项目提供 `self-test`、`art`、`progress` 和 `game` 四个入口：
 
