@@ -19,6 +19,147 @@ dotnet add package XFEExtension.NetCore.XFEConsole
 
 ---
 
+## Windows Terminal 与交互式终端
+
+这些 API 位于 `XFEExtension.NetCore.XFEConsole.Terminal` 命名空间。库会区分 Windows Terminal、传统 Windows 控制台、其他 VT 终端和重定向输出；现代功能不可用时会降级或安全忽略。
+
+### 能力检测
+
+```csharp
+using XFEExtension.NetCore.XFEConsole.Terminal;
+
+XFETerminalCapabilities terminal = XFETerminal.Capabilities;
+Console.WriteLine(terminal.Kind);                    // WindowsTerminal / LegacyWindowsConsole / ...
+Console.WriteLine(terminal.SupportsTrueColor);
+Console.WriteLine(terminal.SupportsTaskbarProgress);
+
+// 环境变化后可重新检测；Windows 下会尝试启用 ENABLE_VIRTUAL_TERMINAL_PROCESSING
+terminal = XFETerminal.RefreshCapabilities();
+```
+
+### Windows Terminal 标签页与任务栏进度
+
+```csharp
+// Windows Terminal 1.6+：标签页显示进度圆环，Windows 任务栏显示进度条
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Normal, 50);
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Warning, 75);
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Error, 90);
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Indeterminate);
+XFETerminal.ClearTaskbarProgress();
+
+// 同时显示行内进度和 Windows Terminal 任务栏进度
+using var progress = XFEConsole.CreateTerminalProgressBar(new XFETerminalProgressBarOptions
+{
+    Width = 36,
+    Prefix = "正在构建 ",
+    CompletedColor = XFETerminalColor.FromRgb(53, 199, 89),
+    UseTaskbarProgress = true
+});
+
+for (var i = 0; i <= 100; i++)
+    progress.Report(i / 100d, $"{i}/100");
+```
+
+传统控制台仍会显示无 ANSI 污染的行内进度；Windows Terminal 专有的任务栏进度会安全忽略。
+
+### 光标、屏幕、颜色与 Windows Terminal 集成
+
+`XFETerminalSequences` 可以单独生成字符串，`XFETerminal.WriteRaw` 可以直接发送序列：
+
+```csharp
+var style = new XFETerminalStyle
+{
+    Foreground = XFETerminalColor.FromRgb(70, 190, 255),
+    Background = XFETerminalColor.FromIndex(236),
+    Bold = true,
+    Underline = true
+};
+
+XFETerminal.WriteRaw(
+    XFETerminalSequences.CursorPosition(5, 10) +
+    style.Apply("24 位真彩色"));
+
+XFETerminal.SetTitle("构建中");
+XFETerminal.WriteHyperlink("项目主页", new Uri("https://github.com/XFEstudio"));
+XFETerminal.SetWorkingDirectory(Environment.CurrentDirectory); // Windows Terminal 复制标签页时沿用目录
+```
+
+已提供的序列覆盖：相对/绝对光标移动、保存/恢复光标、光标显示与形状、清屏/清行、字符和行插入/删除、滚动、滚动区域、自动换行、备用屏幕、16/256/24 位颜色、调色板、OSC 8 超链接、OSC 9;4 进度、OSC 9;9 当前目录、OSC 133 命令标记、括号粘贴、焦点报告、SGR 鼠标跟踪、设备/光标查询、软重置，以及显式的 OSC 52 剪贴板序列生成。
+
+### 全屏画布和小游戏循环
+
+画布坐标从 0 开始，现代终端采用差量 VT 刷新，传统 Windows 控制台使用光标与颜色 API 降级。`XFETerminalSession` 会在异常、取消或正常退出时恢复备用屏幕、光标、换行和文本样式。
+
+```csharp
+await XFETerminalGame.RunAsync((game, cancellationToken) =>
+{
+    if (game.IsKeyPressed(ConsoleKey.LeftArrow))  playerX--;
+    if (game.IsKeyPressed(ConsoleKey.RightArrow)) playerX++;
+
+    foreach (var mouse in game.InputEvents.OfType<XFETerminalMouseEvent>())
+    {
+        if (mouse.Action == XFEMouseAction.ButtonPressed)
+            (playerX, playerY) = (mouse.X, mouse.Y);
+    }
+
+    game.Canvas.Clear();
+    game.Canvas.DrawBox(0, 0, game.Canvas.Width, game.Canvas.Height,
+        XFETerminalBoxStyle.Rounded,
+        new XFETerminalStyle { Foreground = XFETerminalColor.Cyan });
+    game.Canvas.Set(playerX, playerY, '@',
+        new XFETerminalStyle { Foreground = XFETerminalColor.Red, Bold = true });
+
+    return ValueTask.CompletedTask;
+}, new XFETerminalGameOptions
+{
+    FramesPerSecond = 30,
+    CaptureMouse = true,
+    ExitKey = ConsoleKey.Escape
+});
+```
+
+需要自行控制循环时，可直接组合 `XFETerminalSession`、`XFETerminalCanvas` 和 `XFETerminalInputReader`。输入读取器提供键盘按下/释放、修饰键、鼠标按键/移动/双击/滚轮和窗口尺寸事件。
+
+### 彩色标题艺术字
+
+内置 `Block`、`Compact`、`Dots`、`Outline`、`Shadow`、`Slant` 和 `Framed` 七种样式，以及 `Cyan`、`Rainbow`、`Ocean`、`Sunset`、`Forest`、`Fire`、`Neon` 配色。点阵字体支持 A-Z、0-9 和常用符号；中文、Emoji 等字符会自动使用保留原文字的边框样式。
+
+```csharp
+// 生成字符串，开发者自行存储或输出
+string plain = XFETerminalTitleArt.GeneratePlain(
+    "XFE",
+    XFETerminalArtStyle.Shadow,
+    XFETerminalCompatibility.Legacy);
+
+string terminalReady = XFEConsole.GenerateTitleArt("XFE", new XFETerminalTitleArtOptions
+{
+    Style = XFETerminalArtStyle.Outline,
+    Palette = XFETerminalArtPalette.Rainbow,
+    Compatibility = XFETerminalCompatibility.Modern
+});
+
+// 直接显示；Auto 自动区分新旧终端
+XFEConsole.WriteTitleArt("终端艺术字", new XFETerminalTitleArtOptions
+{
+    Style = XFETerminalArtStyle.Framed,
+    Palette = XFETerminalArtPalette.Ocean,
+    Compatibility = XFETerminalCompatibility.Auto
+});
+```
+
+现代模式使用 Unicode 绘图字符和 ANSI 真彩色；传统模式返回纯 ASCII 字符串，直接显示时通过 `ConsoleColor` 着色，不会把转义字符打印到旧终端。
+
+示例项目提供 `self-test`、`art`、`progress` 和 `game` 四个入口：
+
+```shell
+dotnet run --project XFEExtension.NetCore.XFEConsole.Test -- self-test
+dotnet run --project XFEExtension.NetCore.XFEConsole.Test -- game
+```
+
+相关协议参考：[Windows Console VT 序列](https://learn.microsoft.com/windows/console/console-virtual-terminal-sequences)、[Windows Terminal 进度](https://learn.microsoft.com/windows/terminal/tutorials/progress-bar-sequences)、[Windows Terminal Shell Integration](https://learn.microsoft.com/windows/terminal/tutorials/shell-integration)。
+
+---
+
 ## 远程控制台
 
 ### 连接至远程控制台

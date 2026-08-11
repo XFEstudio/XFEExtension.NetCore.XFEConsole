@@ -19,6 +19,131 @@ dotnet add package XFEExtension.NetCore.XFEConsole
 
 ---
 
+## Windows Terminal and Interactive Terminal APIs
+
+These APIs live in `XFEExtension.NetCore.XFEConsole.Terminal`. The library distinguishes Windows Terminal, the legacy Windows console, other VT terminals, and redirected output. Modern-only operations degrade safely when unavailable.
+
+### Capability detection
+
+```csharp
+using XFEExtension.NetCore.XFEConsole.Terminal;
+
+XFETerminalCapabilities terminal = XFETerminal.Capabilities;
+Console.WriteLine(terminal.Kind);
+Console.WriteLine(terminal.SupportsTrueColor);
+Console.WriteLine(terminal.SupportsTaskbarProgress);
+
+terminal = XFETerminal.RefreshCapabilities(); // Also tries to enable Windows VT processing
+```
+
+### Windows Terminal tab and taskbar progress
+
+```csharp
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Normal, 50);
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Warning, 75);
+XFEConsole.SetTerminalProgress(XFETerminalProgressState.Indeterminate);
+XFETerminal.ClearTaskbarProgress();
+
+using var progress = XFEConsole.CreateTerminalProgressBar(new XFETerminalProgressBarOptions
+{
+    Width = 36,
+    Prefix = "Building ",
+    UseTaskbarProgress = true
+});
+progress.Report(0.5, "step 50/100");
+```
+
+The inline progress bar remains usable in legacy terminals. OSC 9;4 taskbar progress is emitted only in Windows Terminal.
+
+### VT controls and Windows Terminal integration
+
+`XFETerminalSequences` builds reusable strings, while `XFETerminal.WriteRaw` sends them to the local terminal:
+
+```csharp
+var style = new XFETerminalStyle
+{
+    Foreground = XFETerminalColor.FromRgb(70, 190, 255),
+    Background = XFETerminalColor.FromIndex(236),
+    Bold = true
+};
+
+XFETerminal.WriteRaw(
+    XFETerminalSequences.CursorPosition(5, 10) +
+    style.Apply("24-bit color"));
+
+XFETerminal.SetTitle("Building");
+XFETerminal.WriteHyperlink("Project", new Uri("https://github.com/XFEstudio"));
+XFETerminal.SetWorkingDirectory(Environment.CurrentDirectory);
+```
+
+The sequence API covers relative/absolute cursor movement, save/restore, cursor visibility and shape, erase operations, character/line insertion and deletion, scrolling and margins, wrapping, alternate screen, 16/256/24-bit colors, palette updates, OSC 8 hyperlinks, OSC 9;4 progress, OSC 9;9 working directory, OSC 133 command marks, bracketed paste, focus and SGR mouse reporting, device/cursor queries, soft reset, and explicit OSC 52 clipboard sequence generation.
+
+### Full-screen canvas and game loop
+
+The canvas uses zero-based coordinates and VT differential rendering. Legacy Windows consoles fall back to the Console cursor/color APIs. Terminal state is restored on completion, cancellation, or exception.
+
+```csharp
+await XFETerminalGame.RunAsync((game, cancellationToken) =>
+{
+    if (game.IsKeyPressed(ConsoleKey.LeftArrow))  playerX--;
+    if (game.IsKeyPressed(ConsoleKey.RightArrow)) playerX++;
+
+    game.Canvas.Clear();
+    game.Canvas.DrawBox(0, 0, game.Canvas.Width, game.Canvas.Height,
+        XFETerminalBoxStyle.Rounded);
+    game.Canvas.Set(playerX, playerY, '@', new XFETerminalStyle
+    {
+        Foreground = XFETerminalColor.Red,
+        Bold = true
+    });
+    return ValueTask.CompletedTask;
+}, new XFETerminalGameOptions
+{
+    FramesPerSecond = 30,
+    CaptureMouse = true,
+    ExitKey = ConsoleKey.Escape
+});
+```
+
+For custom loops, compose `XFETerminalSession`, `XFETerminalCanvas`, and `XFETerminalInputReader`. Input events include key up/down and modifiers, mouse buttons/movement/double-click/wheels, and window resizing.
+
+### Colored title art
+
+Seven styles are built in (`Block`, `Compact`, `Dots`, `Outline`, `Shadow`, `Slant`, and `Framed`) together with cyan, rainbow, ocean, sunset, forest, fire, and neon palettes. Bitmap styles cover A-Z, 0-9, and common punctuation. Other Unicode text automatically uses a frame so that CJK and emoji are preserved.
+
+```csharp
+string plain = XFETerminalTitleArt.GeneratePlain(
+    "XFE",
+    XFETerminalArtStyle.Shadow,
+    XFETerminalCompatibility.Legacy);
+
+string terminalReady = XFEConsole.GenerateTitleArt("XFE", new XFETerminalTitleArtOptions
+{
+    Style = XFETerminalArtStyle.Outline,
+    Palette = XFETerminalArtPalette.Rainbow
+});
+
+XFEConsole.WriteTitleArt("XFE", new XFETerminalTitleArtOptions
+{
+    Style = XFETerminalArtStyle.Block,
+    Palette = XFETerminalArtPalette.Ocean,
+    Compatibility = XFETerminalCompatibility.Auto
+});
+```
+
+Modern mode uses Unicode drawing characters and ANSI true color. Legacy mode returns clean ASCII and uses `ConsoleColor` when writing directly.
+
+Run the feature demos and deterministic checks with:
+
+```shell
+dotnet run --project XFEExtension.NetCore.XFEConsole.Test -- self-test
+dotnet run --project XFEExtension.NetCore.XFEConsole.Test -- game
+```
+
+Protocol references: [Windows Console VT sequences](https://learn.microsoft.com/windows/console/console-virtual-terminal-sequences), [Windows Terminal progress](https://learn.microsoft.com/windows/terminal/tutorials/progress-bar-sequences), and [Windows Terminal shell integration](https://learn.microsoft.com/windows/terminal/tutorials/shell-integration).
+
+---
+
 ## Remote Console
 
 ### Connect to the Remote Console

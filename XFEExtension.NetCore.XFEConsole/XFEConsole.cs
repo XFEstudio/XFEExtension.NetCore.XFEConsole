@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using XFEExtension.NetCore.XFEConsole.Options;
+using XFEExtension.NetCore.XFEConsole.Terminal;
 using XFEExtension.NetCore.XFEConsole.Utilities.Helpers;
 using XFEExtension.NetCore.XFETransform;
 using XFEExtension.NetCore.XFETransform.ObjectInfoAnalyzer;
@@ -56,6 +57,45 @@ public static class XFEConsole
     /// 当前控制台输出流
     /// </summary>
     public static XFEConsoleTextWriter? CurrentConsoleTextWriter { get; set; }
+    /// <summary>
+    /// 当前本地终端能力快照。
+    /// </summary>
+    public static XFETerminalCapabilities TerminalCapabilities => XFETerminal.Capabilities;
+    /// <summary>
+    /// 设置 Windows Terminal 标签页及任务栏进度。
+    /// </summary>
+    /// <param name="state">进度状态。</param>
+    /// <param name="progress">0 到 100 的进度。</param>
+    /// <returns>是否已发送给 Windows Terminal。</returns>
+    public static bool SetTerminalProgress(XFETerminalProgressState state, int progress = 0) =>
+        XFETerminal.SetTaskbarProgress(state, progress);
+    /// <summary>
+    /// 创建同时支持行内显示与 Windows Terminal 任务栏的进度条。
+    /// </summary>
+    /// <param name="options">进度条选项。</param>
+    /// <param name="writer">可选输出目标。</param>
+    /// <returns>进度条对象。</returns>
+    public static XFETerminalProgressBar CreateTerminalProgressBar(
+        XFETerminalProgressBarOptions? options = null,
+        TextWriter? writer = null) => XFETerminal.CreateProgressBar(options, writer);
+    /// <summary>
+    /// 生成可直接输出的终端标题艺术字。
+    /// </summary>
+    /// <param name="text">标题文本。</param>
+    /// <param name="options">艺术字选项。</param>
+    /// <returns>艺术字字符串。</returns>
+    public static string GenerateTitleArt(string text, XFETerminalTitleArtOptions? options = null) =>
+        XFETerminalTitleArt.Generate(text, options);
+    /// <summary>
+    /// 直接向本地终端显示标题艺术字。
+    /// </summary>
+    /// <param name="text">标题文本。</param>
+    /// <param name="options">艺术字选项。</param>
+    /// <param name="writer">可选输出目标。</param>
+    public static void WriteTitleArt(
+        string text,
+        XFETerminalTitleArtOptions? options = null,
+        TextWriter? writer = null) => XFETerminalTitleArt.Write(text, options, writer);
     /// <summary>
     /// 使用XFE控制台
     /// </summary>

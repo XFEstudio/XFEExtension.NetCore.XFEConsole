@@ -4,18 +4,18 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.2.2</Version>
+    <Version>2.3.0</Version>
     <Authors>XFEstudio</Authors>
     <Company>寰宇朽力网络科技</Company>
-    <Description>XFEConsole是一个可以运行用户进行远程输出的调试辅助工具，需要配合XFE工具箱来使用，当然也可以根据本DLL内的架构搭建一个调试工具</Description>
+    <Description>XFEConsole 提供远程调试输出、日志、Windows Terminal/VT 控制、交互画布、进度条和标题艺术字功能</Description>
     <Copyright>寰宇朽力网络科技版权所有</Copyright>
     <PackageProjectUrl>https://github.com/XFEstudio/XFEExtension.NetCore.XFEConsole.git</PackageProjectUrl>
     <PackageIcon>logoIcon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/XFEstudio/XFEExtension.NetCore.XFEConsole.git</RepositoryUrl>
-    <PackageTags>XFE;Console;Test;Out;Output;Remote;</PackageTags>
+    <PackageTags>XFE;Console;Test;Output;Remote;WindowsTerminal;ANSI;VT;Progress;TUI;ASCIIArt;</PackageTags>
     <PackageReleaseNotes>
-      更新包引用，更新README文档，新增自动化发布流程
+      新增 Windows Terminal/VT 控制、标签页与任务栏进度、交互画布、键鼠输入、小游戏循环和多样式彩色标题艺术字，并为传统控制台提供降级支持
     </PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
