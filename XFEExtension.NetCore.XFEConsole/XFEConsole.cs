@@ -54,6 +54,10 @@ public static class XFEConsole
     /// </summary>
     public static List<XFEConsoleProgramClient> ClientList { get; set; } = [];
     /// <summary>
+    /// 当前由调试程序托管的远程控制台服务器列表。
+    /// </summary>
+    public static List<XFEConsoleProgramServer> ProgramServerList { get; set; } = [];
+    /// <summary>
     /// 当前控制台输出流
     /// </summary>
     public static XFEConsoleTextWriter? CurrentConsoleTextWriter { get; set; }
@@ -117,6 +121,28 @@ public static class XFEConsole
     /// <returns>是否连接成功</returns>
     public static async Task<bool> UseXFEConsole(int port = 3280, string password = "") => await UseXFEConsole($"ws://localhost:{port}/", AppDomain.CurrentDomain.FriendlyName, Guid.NewGuid().ToString(), password);
     /// <summary>
+    /// 以服务器模式使用 XFE 控制台，允许工具箱主动连接当前调试程序。
+    /// </summary>
+    /// <param name="port">监听端口。</param>
+    /// <param name="localOnly">是否仅允许本机工具箱连接；远程调试时应设为 false。</param>
+    /// <param name="password">工具箱连接密码。</param>
+    /// <param name="programName">显示在工具箱中的程序名称。</param>
+    /// <param name="programId">程序唯一标识。</param>
+    /// <returns>已启动的调试程序服务器。</returns>
+    public static async Task<XFEConsoleProgramServer> UseXFEConsoleServer(
+        int port = 3280,
+        bool localOnly = true,
+        string password = "",
+        string? programName = null,
+        string? programId = null)
+    {
+        SetConsoleOutput();
+        var server = new XFEConsoleProgramServer(port, localOnly, password, programName, programId);
+        await server.StartAsync().ConfigureAwait(false);
+        ProgramServerList.Add(server);
+        return server;
+    }
+    /// <summary>
     /// 使用XFE控制台日志
     /// </summary>
     public static void UseXFEConsoleLog(XFEConsoleLogOptions? xFEConsoleLogOptions = null)
@@ -156,8 +182,13 @@ public static class XFEConsole
     {
         if (CurrentConsoleTextWriter is not null)
             Console.SetOut(CurrentConsoleTextWriter.OriginalTextWriter);
-        foreach (var client in ClientList)
-            await client.Client.CloseCyberCommClient();
+        foreach (var client in ClientList.ToArray())
+            await client.Client.DisconnectAsync().ConfigureAwait(false);
+        foreach (var server in ProgramServerList.ToArray())
+            await server.StopAsync().ConfigureAwait(false);
+        ClientList.Clear();
+        ProgramServerList.Clear();
+        CurrentConsoleTextWriter = null;
     }
     /// <summary>
     /// 设置XFE控制台
@@ -165,6 +196,11 @@ public static class XFEConsole
     /// <returns></returns>
     public static void SetConsoleOutput()
     {
+        if (Console.Out is XFEConsoleTextWriter currentWriter)
+        {
+            CurrentConsoleTextWriter = currentWriter;
+            return;
+        }
         CurrentConsoleTextWriter = new(Console.Out);
         Console.SetOut(CurrentConsoleTextWriter);
     }
@@ -210,8 +246,7 @@ public static class XFEConsole
             Debug.WriteLine(objectInfo);
         if (ShowInLocalConsole)
             await (CurrentConsoleTextWriter?.OriginalTextWriter.WriteLineAsync(objectInfo) ?? Task.CompletedTask);
-        foreach (var client in ClientList)
-            await client.OutputMessage(objectInfo, true);
+        await OutputToRemoteConsolesAsync(objectInfo, true).ConfigureAwait(false);
     }
     /// <summary>
     /// 向已连接的XFE控制台输出一条消息
@@ -233,8 +268,7 @@ public static class XFEConsole
         {
             CurrentConsoleTextWriter?.OriginalTextWriter.WriteLine(text);
         }
-        foreach (var client in ClientList)
-            client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", true).Wait();
+        OutputToRemoteConsolesAsync($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", true).GetAwaiter().GetResult();
     }
     /// <summary>
     /// 向已连接的XFE控制台输出一条消息
@@ -256,8 +290,7 @@ public static class XFEConsole
         {
             CurrentConsoleTextWriter?.OriginalTextWriter.Write(text);
         }
-        foreach (var client in ClientList)
-            client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", false).Wait();
+        OutputToRemoteConsolesAsync($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", false).GetAwaiter().GetResult();
     }
     /// <summary>
     /// 向已连接的XFE控制台输出一条消息
@@ -279,8 +312,7 @@ public static class XFEConsole
         {
             await (CurrentConsoleTextWriter?.OriginalTextWriter.WriteLineAsync(text) ?? Task.CompletedTask);
         }
-        foreach (var client in ClientList)
-            await client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", true);
+        await OutputToRemoteConsolesAsync($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", true).ConfigureAwait(false);
     }
     /// <summary>
     /// 向已连接的XFE控制台输出一条消息
@@ -303,9 +335,15 @@ public static class XFEConsole
             {
                 await (CurrentConsoleTextWriter?.OriginalTextWriter.WriteAsync(text) ?? Task.CompletedTask);
             }
-            foreach (var client in ClientList)
-                await client.OutputMessage($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", false);
+            await OutputToRemoteConsolesAsync($"[color {ConvertConsoleColorToString(Console.ForegroundColor)} {ConvertConsoleColorToString(Console.BackgroundColor)}]{text}", false).ConfigureAwait(false);
         }
+    }
+    private static async Task OutputToRemoteConsolesAsync(string message, bool isLine)
+    {
+        foreach (var client in ClientList.ToArray())
+            await client.OutputMessage(message, isLine).ConfigureAwait(false);
+        foreach (var server in ProgramServerList.ToArray())
+            await server.OutputMessage(message, isLine).ConfigureAwait(false);
     }
     /// <summary>
     /// 将控制台颜色转为颜色代码

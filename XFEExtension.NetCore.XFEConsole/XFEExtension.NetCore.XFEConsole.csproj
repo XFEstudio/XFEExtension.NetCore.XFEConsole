@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.5.0</Version>
+    <Version>2.6.0</Version>
     <Authors>XFEstudio</Authors>
     <Company>寰宇朽力网络科技</Company>
     <Description>XFEConsole 提供远程调试输出、日志、Windows Terminal/VT 控制、交互画布、进度条和标题艺术字功能</Description>
@@ -13,9 +13,9 @@
     <PackageIcon>logoIcon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/XFEstudio/XFEExtension.NetCore.XFEConsole.git</RepositoryUrl>
-    <PackageTags>XFE;Console;Test;Output;Remote;WindowsTerminal;ANSI;VT;Progress;TUI;ASCIIArt;FIGlet;</PackageTags>
+    <PackageTags>XFE;Console;Test;Output;Remote;WindowsTerminal;ANSI;VT;Progress;TUI;ASCIIArt;</PackageTags>
     <PackageReleaseNotes>
-      标题艺术字新增 250 多种 FIGlet 字体、可配置外描边、多层 3D 挤出、分层颜色与旧终端 ASCII 降级
+      标题艺术字新增多种自研字体、可配置外描边、多层 3D 挤出、分层颜色与旧终端 ASCII 降级，不引入第三方字体包；新增工具箱主动连接调试程序服务器的第二调试模式、密码握手，并迁移至 CyberComm 5.2.0 新 API
     </PackageReleaseNotes>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -44,8 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Figgle.Fonts" Version="0.6.6" />
-    <PackageReference Include="XFEExtension.NetCore" Version="4.2.*" />
+    <PackageReference Include="XFEExtension.NetCore" Version="5.2.0" />
   </ItemGroup>
 
 </Project>

@@ -109,7 +109,7 @@ For custom loops, compose `XFETerminalSession`, `XFETerminalCanvas`, and `XFETer
 
 ### Colored title art
 
-In addition to the backward-compatible 5x5 pixel font, the library now bundles more than 250 FIGlet fonts. Common choices are exposed through `Standard`, `Big`, `Slant`, `AnsiShadow`, `Doom`, `Epic`, `Gothic`, `Ivrit`, `Modular`, `Ogre`, `Rectangles`, `Relief`, `Isometric`, and `Larry3D`; `FigletFontName` accepts any name returned by `AvailableFigletFonts`.
+The repository implements 17 fonts itself and has no third-party font-package dependency: `Pixel`, `Standard`, `Big`, `Small`, `Slant`, `AnsiShadow`, `SmallShadow`, `Doom`, `Epic`, `Gothic`, `Ivrit`, `Modular`, `Ogre`, `Rectangles`, `Relief`, `Isometric`, and `Larry3D`. They are generated from the built-in glyph matrix by independent line-connection, double-line, block, module, mirror, relief, shadow, and isometric algorithms. `AvailableFonts` returns the complete enum list.
 
 Fonts and effects are independent and composable. `OutlineWidth` creates a real outer stroke, while `ExtrudeDepth` and the eight `ExtrudeDirection` values create layered 3D extrusion. Fill, outline, and extrusion have separate palette/color controls. `Outline` supplies a one-cell default stroke and `ThreeDimensional` supplies a three-cell down-right extrusion.
 
@@ -141,16 +141,16 @@ string terminalReady = XFEConsole.GenerateTitleArt("XFE", new XFETerminalTitleAr
 
 XFEConsole.WriteTitleArt("HELLO", new XFETerminalTitleArtOptions
 {
-    FigletFontName = "Banner3D",
+    Font = XFETerminalArtFont.Larry3D,
     Palette = XFETerminalArtPalette.Ocean,
     Compatibility = XFETerminalCompatibility.Auto
 });
 
-foreach (string fontName in XFETerminalTitleArt.AvailableFigletFonts)
-    Console.WriteLine(fontName);
+foreach (XFETerminalArtFont font in XFETerminalTitleArt.AvailableFonts)
+    Console.WriteLine(font);
 ```
 
-Modern mode uses Unicode effect characters and ANSI true color, including distinct colors within a single row. Legacy mode switches effects to ASCII and uses `ConsoleColor` when writing directly. FIGlet fonts primarily cover Latin letters, digits, and common punctuation; unsupported CJK or emoji text falls back to a frame that preserves the original characters.
+Modern mode uses Unicode effect characters and ANSI true color, including distinct colors within a single row. Legacy mode switches effects to ASCII and uses `ConsoleColor` when writing directly. Built-in glyphs cover Latin letters, digits, and common punctuation; unsupported CJK or emoji text falls back to a frame that preserves the original characters.
 
 Run the feature demos and deterministic checks with:
 
@@ -176,6 +176,19 @@ bool connected = await XFEConsole.UseXFEConsole("ws://192.168.1.100:3280/", "MyA
 ```
 
 Once connected, all `Console.WriteLine` and `Console.Write` output is automatically forwarded to the remote console.
+
+### Mode 2: Let the Toolbox Connect to the Program
+
+```csharp
+// Run the debug program as the server. Remote toolboxes must use the same password.
+XFEConsoleProgramServer server = await XFEConsole.UseXFEConsoleServer(
+    port: 3280,
+    localOnly: false,
+    password: "your-password",
+    programName: "MyApp");
+```
+
+Enable "Mode 2" in the toolbox console settings, enter `ws://server-address:3280/` and the same password, then start the console. Keep `localOnly` set to `true` for same-machine debugging. Across networks, use `ws` only on a trusted LAN or VPN; public deployments should place the endpoint behind a TLS reverse proxy and connect with `wss`.
 
 ### Properties
 

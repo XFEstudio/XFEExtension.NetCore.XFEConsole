@@ -1,7 +1,4 @@
-using Figgle;
-using Figgle.Fonts;
 using System.Globalization;
-using System.Reflection;
 using System.Text;
 
 namespace XFEExtension.NetCore.XFEConsole.Terminal;
@@ -30,43 +27,43 @@ public enum XFETerminalArtStyle
 }
 
 /// <summary>
-/// 常用的终端艺术字体。除 <see cref="Pixel"/> 外均由 FIGlet 字体提供。
+/// XFEConsole 自研的终端艺术字体。
 /// </summary>
 public enum XFETerminalArtFont
 {
     /// <summary>XFEConsole 内置的 5x5 点阵字体。</summary>
     Pixel,
-    /// <summary>FIGlet Standard。</summary>
+    /// <summary>经典线框字体。</summary>
     Standard,
-    /// <summary>FIGlet Big。</summary>
+    /// <summary>双倍尺寸块状字体。</summary>
     Big,
-    /// <summary>FIGlet Small。</summary>
+    /// <summary>紧凑块状字体。</summary>
     Small,
-    /// <summary>FIGlet Slant。</summary>
+    /// <summary>倾斜线框字体。</summary>
     Slant,
-    /// <summary>ANSI Shadow 风格；映射至 FIGlet Shadow。</summary>
+    /// <summary>ANSI 实心阴影字体。</summary>
     AnsiShadow,
-    /// <summary>FIGlet Shadow Small。</summary>
+    /// <summary>紧凑阴影字体。</summary>
     SmallShadow,
-    /// <summary>FIGlet Doom。</summary>
+    /// <summary>厚重的 Doom 风格字体。</summary>
     Doom,
-    /// <summary>FIGlet Epic。</summary>
+    /// <summary>双线 Epic 风格字体。</summary>
     Epic,
-    /// <summary>FIGlet Gothic。</summary>
+    /// <summary>尖角哥特字体。</summary>
     Gothic,
-    /// <summary>FIGlet Ivrit。</summary>
+    /// <summary>从右向左镜像布局字体。</summary>
     Ivrit,
-    /// <summary>FIGlet Modular。</summary>
+    /// <summary>模块化单元字体。</summary>
     Modular,
-    /// <summary>FIGlet Ogre。</summary>
+    /// <summary>圆润 Ogre 风格字体。</summary>
     Ogre,
-    /// <summary>FIGlet Rectangles。</summary>
+    /// <summary>矩形单元字体。</summary>
     Rectangles,
-    /// <summary>FIGlet Relief。</summary>
+    /// <summary>浮雕高光字体。</summary>
     Relief,
-    /// <summary>FIGlet Isometric1。</summary>
+    /// <summary>等距投影字体。</summary>
     Isometric,
-    /// <summary>FIGlet Larry3d。</summary>
+    /// <summary>Larry 风格立体字体。</summary>
     Larry3D
 }
 
@@ -126,12 +123,6 @@ public sealed class XFETerminalTitleArtOptions
 
     /// <summary>艺术字体；默认使用兼容原有版本的内置点阵字体。</summary>
     public XFETerminalArtFont Font { get; set; } = XFETerminalArtFont.Pixel;
-
-    /// <summary>
-    /// 任意 FIGlet 字体名。设置后优先于 <see cref="Font"/>；可从
-    /// <see cref="XFETerminalTitleArt.AvailableFigletFonts"/> 获取全部名称。
-    /// </summary>
-    public string? FigletFontName { get; set; }
 
     /// <summary>内置配色。</summary>
     public XFETerminalArtPalette Palette { get; set; } = XFETerminalArtPalette.Cyan;
@@ -198,16 +189,6 @@ public static class XFETerminalTitleArt
 
         public int Height => Rows.Length;
     }
-
-    private static readonly PropertyInfo[] FigletFontProperties = typeof(FiggleFonts)
-        .GetProperties(BindingFlags.Public | BindingFlags.Static)
-        .Where(property => property.PropertyType == typeof(FiggleFont) && property.GetMethod is not null)
-        .OrderBy(property => property.Name, StringComparer.OrdinalIgnoreCase)
-        .ToArray();
-
-    private static readonly Dictionary<string, FiggleFont> FigletFontCache = new(StringComparer.OrdinalIgnoreCase);
-
-    private static readonly object FigletFontCacheLock = new();
 
     private static readonly IReadOnlyDictionary<char, string> Glyphs = new Dictionary<char, string>
     {
@@ -311,9 +292,9 @@ public static class XFETerminalTitleArt
             ]
         };
 
-    /// <summary>取得全部可通过 <see cref="XFETerminalTitleArtOptions.FigletFontName"/> 使用的 FIGlet 字体名。</summary>
-    public static IReadOnlyList<string> AvailableFigletFonts { get; } =
-        Array.AsReadOnly(FigletFontProperties.Select(property => property.Name).ToArray());
+    /// <summary>取得本仓库实现的全部艺术字体。</summary>
+    public static IReadOnlyList<XFETerminalArtFont> AvailableFonts { get; } =
+        Array.AsReadOnly(Enum.GetValues<XFETerminalArtFont>());
 
     /// <summary>
     /// 生成适合当前终端直接输出的艺术字。现代模式可能包含 ANSI 颜色序列。
@@ -367,11 +348,6 @@ public static class XFETerminalTitleArt
     }
 
     /// <summary>
-    /// 检查指定 FIGlet 字体名是否可用。比较时忽略大小写、空格、连字符和下划线。
-    /// </summary>
-    public static bool IsFigletFontAvailable(string? fontName) => FindFigletFontProperty(fontName) is not null;
-
-    /// <summary>
     /// 直接向终端显示艺术字。传统模式会通过 ConsoleColor 为正面、描边和挤出层着色。
     /// </summary>
     /// <param name="text">标题文本。</param>
@@ -407,12 +383,11 @@ public static class XFETerminalTitleArt
         {
             rows = RenderFramed(text, modern);
         }
-        else if (options.Font != XFETerminalArtFont.Pixel || !string.IsNullOrWhiteSpace(options.FigletFontName))
+        else if (options.Font != XFETerminalArtFont.Pixel)
         {
-            var font = ResolveFigletFont(options);
-            rows = text.Any(character => !char.IsWhiteSpace(character) && !font.Contains(character))
+            rows = text.ToUpperInvariant().Any(character => !Glyphs.ContainsKey(character))
                 ? RenderFramed(text, modern)
-                : NormalizeRows(font.Render(text));
+                : RenderBuiltInFont(text, options.Font, options.LetterSpacing, modern);
         }
         else
         {
@@ -512,48 +487,346 @@ public static class XFETerminalTitleArt
         _ => throw new ArgumentOutOfRangeException(nameof(direction))
     };
 
-    private static FiggleFont ResolveFigletFont(XFETerminalTitleArtOptions options)
+    private static IReadOnlyList<string> RenderBuiltInFont(
+        string text,
+        XFETerminalArtFont font,
+        int letterSpacing,
+        bool modern)
     {
-        var requestedName = string.IsNullOrWhiteSpace(options.FigletFontName)
-            ? FontName(options.Font)
-            : options.FigletFontName;
-        var property = FindFigletFontProperty(requestedName) ??
-            throw new ArgumentException($"找不到 FIGlet 字体“{requestedName}”。请从 AvailableFigletFonts 选择字体。", nameof(options));
-
-        lock (FigletFontCacheLock)
+        var compact = BuildTextMatrix(text, 1, 1, letterSpacing);
+        return font switch
         {
-            if (FigletFontCache.TryGetValue(property.Name, out var cached))
-                return cached;
-            var font = (FiggleFont?)property.GetValue(null) ??
-                throw new InvalidOperationException($"无法加载 FIGlet 字体“{property.Name}”。");
-            FigletFontCache[property.Name] = font;
-            return font;
+            XFETerminalArtFont.Standard => RenderConnectionMask(compact, modern, false, false),
+            XFETerminalArtFont.Big => RenderSolidMask(BuildTextMatrix(text, 2, 2, letterSpacing), modern ? '█' : '#'),
+            XFETerminalArtFont.Small => RenderSolidMask(compact, modern ? '▪' : '*'),
+            XFETerminalArtFont.Slant => SlantRows(RenderConnectionMask(compact, modern, false, false)),
+            XFETerminalArtFont.AnsiShadow => AddInlineShadow(
+                RenderSolidMask(BuildTextMatrix(text, 2, 1, letterSpacing), modern ? '█' : '#'),
+                modern ? '░' : '.', 1, 1),
+            XFETerminalArtFont.SmallShadow => AddInlineShadow(
+                RenderSolidMask(compact, modern ? '■' : '#'), modern ? '░' : '.', 1, 1),
+            XFETerminalArtFont.Doom => RenderDoomMask(BuildTextMatrix(text, 2, 1, letterSpacing), modern),
+            XFETerminalArtFont.Epic => RenderConnectionMask(compact, modern, true, false),
+            XFETerminalArtFont.Gothic => RenderGothicMask(compact, modern),
+            XFETerminalArtFont.Ivrit => RenderConnectionMask(
+                BuildTextMatrix(text, 1, 1, letterSpacing, reverse: true, mirror: true), modern, false, false),
+            XFETerminalArtFont.Modular => RenderTokenMask(compact, modern ? "▦" : "O"),
+            XFETerminalArtFont.Ogre => RenderConnectionMask(compact, modern, false, true),
+            XFETerminalArtFont.Rectangles => RenderTokenMask(compact, modern ? "▣" : "[]"),
+            XFETerminalArtFont.Relief => AddInlineShadow(
+                RenderSolidMask(BuildTextMatrix(text, 2, 1, letterSpacing), modern ? '▓' : '%'),
+                modern ? '░' : '.', 1, 1),
+            XFETerminalArtFont.Isometric => RenderIsometricMask(compact, modern),
+            XFETerminalArtFont.Larry3D => SlantRows(AddInlineShadow(
+                RenderSolidMask(BuildTextMatrix(text, 2, 1, letterSpacing), modern ? '█' : '#'),
+                modern ? '╲' : '\\', 2, 1)),
+            _ => throw new ArgumentOutOfRangeException(nameof(font))
+        };
+    }
+
+    private static bool[,] BuildTextMatrix(
+        string text,
+        int scaleX,
+        int scaleY,
+        int letterSpacing,
+        bool reverse = false,
+        bool mirror = false)
+    {
+        var normalized = text.ToUpperInvariant();
+        if (reverse)
+            normalized = new string(normalized.Reverse().ToArray());
+
+        var glyphWidth = GlyphWidth * scaleX;
+        var width = normalized.Length * glyphWidth + Math.Max(0, normalized.Length - 1) * letterSpacing;
+        var matrix = new bool[GlyphHeight * scaleY, width];
+        var offsetX = 0;
+        foreach (var character in normalized)
+        {
+            var glyph = Glyphs[character];
+            for (var glyphY = 0; glyphY < GlyphHeight; glyphY++)
+                for (var glyphX = 0; glyphX < GlyphWidth; glyphX++)
+                {
+                    var sourceX = mirror ? GlyphWidth - glyphX - 1 : glyphX;
+                    if (glyph[glyphY * GlyphWidth + sourceX] != '1')
+                        continue;
+                    for (var yScale = 0; yScale < scaleY; yScale++)
+                        for (var xScale = 0; xScale < scaleX; xScale++)
+                            matrix[glyphY * scaleY + yScale, offsetX + glyphX * scaleX + xScale] = true;
+                }
+            offsetX += glyphWidth + letterSpacing;
         }
+        return matrix;
     }
 
-    private static PropertyInfo? FindFigletFontProperty(string? fontName)
+    private static IReadOnlyList<string> RenderSolidMask(bool[,] matrix, char character)
     {
-        if (string.IsNullOrWhiteSpace(fontName))
-            return null;
-        var normalized = NormalizeFontName(fontName);
-        return FigletFontProperties.FirstOrDefault(property => NormalizeFontName(property.Name) == normalized);
+        var height = matrix.GetLength(0);
+        var width = matrix.GetLength(1);
+        var rows = new string[height];
+        for (var y = 0; y < height; y++)
+        {
+            var builder = new StringBuilder(width);
+            for (var x = 0; x < width; x++)
+                builder.Append(matrix[y, x] ? character : ' ');
+            rows[y] = builder.ToString().TrimEnd();
+        }
+        return rows;
     }
 
-    private static string NormalizeFontName(string fontName) =>
-        new(fontName.Where(character => character is not (' ' or '-' or '_')).Select(char.ToUpperInvariant).ToArray());
-
-    private static string FontName(XFETerminalArtFont font) => font switch
+    private static IReadOnlyList<string> RenderConnectionMask(
+        bool[,] matrix,
+        bool modern,
+        bool doubleLine,
+        bool rounded)
     {
-        XFETerminalArtFont.Pixel => throw new ArgumentException("Pixel 不是 FIGlet 字体。", nameof(font)),
-        XFETerminalArtFont.AnsiShadow => "Shadow",
-        XFETerminalArtFont.SmallShadow => "ShadowSmall",
-        XFETerminalArtFont.Isometric => "Isometric1",
-        XFETerminalArtFont.Larry3D => "Larry3d",
-        _ => font.ToString()
-    };
+        var height = matrix.GetLength(0);
+        var width = matrix.GetLength(1);
+        var rows = new string[height];
+        for (var y = 0; y < height; y++)
+        {
+            var builder = new StringBuilder(width);
+            for (var x = 0; x < width; x++)
+                builder.Append(matrix[y, x] ? ConnectionCharacter(matrix, x, y, modern, doubleLine, rounded) : ' ');
+            rows[y] = builder.ToString().TrimEnd();
+        }
+        return rows;
+    }
 
-    private static IReadOnlyList<string> NormalizeRows(string rendered) =>
-        TrimEmptyRows(rendered.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n').Select(row => row.TrimEnd()).ToArray());
+    private static char ConnectionCharacter(
+        bool[,] matrix,
+        int x,
+        int y,
+        bool modern,
+        bool doubleLine,
+        bool rounded)
+    {
+        var bits = (IsFilled(matrix, x, y - 1) ? 1 : 0) |
+            (IsFilled(matrix, x + 1, y) ? 2 : 0) |
+            (IsFilled(matrix, x, y + 1) ? 4 : 0) |
+            (IsFilled(matrix, x - 1, y) ? 8 : 0);
+        if (!modern && doubleLine)
+            return bits switch
+            {
+                0 => 'O',
+                1 or 4 or 5 => 'H',
+                2 or 8 or 10 => '=',
+                _ => '#'
+            };
+        if (!modern && rounded)
+            return bits switch
+            {
+                0 => 'o',
+                1 or 4 or 5 => '!',
+                2 or 8 or 10 => '~',
+                _ => '+'
+            };
+        if (!modern)
+            return bits switch
+            {
+                0 => 'o',
+                1 or 4 or 5 => '|',
+                2 or 8 or 10 => '-',
+                _ => '+'
+            };
+        if (rounded)
+            return bits switch
+            {
+                0 => '●',
+                1 => '╵',
+                2 => '╶',
+                3 => '╰',
+                4 => '╷',
+                5 => '│',
+                6 => '╭',
+                7 => '├',
+                8 => '╴',
+                9 => '╯',
+                10 => '─',
+                11 => '┴',
+                12 => '╮',
+                13 => '┤',
+                14 => '┬',
+                _ => '┼'
+            };
+        if (doubleLine)
+            return bits switch
+            {
+                0 => '◆',
+                1 => '╵',
+                2 => '╶',
+                3 => '╚',
+                4 => '╷',
+                5 => '║',
+                6 => '╔',
+                7 => '╠',
+                8 => '╴',
+                9 => '╝',
+                10 => '═',
+                11 => '╩',
+                12 => '╗',
+                13 => '╣',
+                14 => '╦',
+                _ => '╬'
+            };
+        return bits switch
+        {
+            0 => '●',
+            1 => '╵',
+            2 => '╶',
+            3 => '└',
+            4 => '╷',
+            5 => '│',
+            6 => '┌',
+            7 => '├',
+            8 => '╴',
+            9 => '┘',
+            10 => '─',
+            11 => '┴',
+            12 => '┐',
+            13 => '┤',
+            14 => '┬',
+            _ => '┼'
+        };
+    }
+
+    private static IReadOnlyList<string> RenderDoomMask(bool[,] matrix, bool modern)
+    {
+        var height = matrix.GetLength(0);
+        var width = matrix.GetLength(1);
+        var rows = new string[height];
+        for (var y = 0; y < height; y++)
+        {
+            var builder = new StringBuilder(width);
+            for (var x = 0; x < width; x++)
+            {
+                if (!matrix[y, x])
+                {
+                    builder.Append(' ');
+                    continue;
+                }
+                var character = !IsFilled(matrix, x - 1, y) ? modern ? '▌' : '/' :
+                    !IsFilled(matrix, x + 1, y) ? modern ? '▐' : '\\' :
+                    !IsFilled(matrix, x, y - 1) ? modern ? '▀' : '_' :
+                    !IsFilled(matrix, x, y + 1) ? modern ? '▄' : '_' : modern ? '█' : '#';
+                builder.Append(character);
+            }
+            rows[y] = builder.ToString().TrimEnd();
+        }
+        return rows;
+    }
+
+    private static IReadOnlyList<string> RenderGothicMask(bool[,] matrix, bool modern)
+    {
+        var height = matrix.GetLength(0);
+        var width = matrix.GetLength(1);
+        var rows = new string[height];
+        for (var y = 0; y < height; y++)
+        {
+            var builder = new StringBuilder(width);
+            for (var x = 0; x < width; x++)
+            {
+                if (!matrix[y, x])
+                {
+                    builder.Append(' ');
+                    continue;
+                }
+                var horizontal = IsFilled(matrix, x - 1, y) || IsFilled(matrix, x + 1, y);
+                var vertical = IsFilled(matrix, x, y - 1) || IsFilled(matrix, x, y + 1);
+                builder.Append((horizontal, vertical) switch
+                {
+                    (true, true) => modern ? '✣' : '+',
+                    (true, false) => modern ? '━' : '-',
+                    (false, true) => modern ? '┃' : '|',
+                    _ => (x + y) % 2 == 0 ? '/' : '\\'
+                });
+            }
+            rows[y] = builder.ToString().TrimEnd();
+        }
+        return rows;
+    }
+
+    private static IReadOnlyList<string> RenderTokenMask(bool[,] matrix, string token)
+    {
+        var height = matrix.GetLength(0);
+        var width = matrix.GetLength(1);
+        var empty = new string(' ', token.Length);
+        var rows = new string[height];
+        for (var y = 0; y < height; y++)
+        {
+            var builder = new StringBuilder(width * token.Length);
+            for (var x = 0; x < width; x++)
+                builder.Append(matrix[y, x] ? token : empty);
+            rows[y] = builder.ToString().TrimEnd();
+        }
+        return rows;
+    }
+
+    private static IReadOnlyList<string> RenderIsometricMask(bool[,] matrix, bool modern)
+    {
+        var height = matrix.GetLength(0);
+        var width = matrix.GetLength(1);
+        var rows = new List<string>(height * 2);
+        var top = modern ? "╱╲" : "/\\";
+        var bottom = modern ? "╲╱" : "\\/";
+        for (var y = 0; y < height; y++)
+        {
+            var indentation = new string(' ', (height - y - 1) * 2);
+            var topBuilder = new StringBuilder(indentation);
+            var bottomBuilder = new StringBuilder(indentation);
+            for (var x = 0; x < width; x++)
+            {
+                topBuilder.Append(matrix[y, x] ? top : "  ");
+                bottomBuilder.Append(matrix[y, x] ? bottom : "  ");
+            }
+            rows.Add(topBuilder.ToString().TrimEnd());
+            rows.Add(bottomBuilder.ToString().TrimEnd());
+        }
+        return rows;
+    }
+
+    private static IReadOnlyList<string> AddInlineShadow(
+        IReadOnlyList<string> sourceRows,
+        char shadowCharacter,
+        int offsetX,
+        int offsetY)
+    {
+        var height = sourceRows.Count + offsetY;
+        var width = sourceRows.Max(row => row.Length) + offsetX;
+        var canvas = new char[height, width];
+        for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++)
+                canvas[y, x] = ' ';
+
+        for (var y = 0; y < sourceRows.Count; y++)
+            for (var x = 0; x < sourceRows[y].Length; x++)
+                if (sourceRows[y][x] != ' ')
+                    canvas[y + offsetY, x + offsetX] = shadowCharacter;
+        for (var y = 0; y < sourceRows.Count; y++)
+            for (var x = 0; x < sourceRows[y].Length; x++)
+                if (sourceRows[y][x] != ' ')
+                    canvas[y, x] = sourceRows[y][x];
+
+        var rows = new string[height];
+        for (var y = 0; y < height; y++)
+        {
+            var builder = new StringBuilder(width);
+            for (var x = 0; x < width; x++)
+                builder.Append(canvas[y, x]);
+            rows[y] = builder.ToString().TrimEnd();
+        }
+        return rows;
+    }
+
+    private static IReadOnlyList<string> SlantRows(IReadOnlyList<string> rows)
+    {
+        var result = new string[rows.Count];
+        for (var y = 0; y < rows.Count; y++)
+            result[y] = new string(' ', rows.Count - y - 1) + rows[y];
+        return result;
+    }
+
+    private static bool IsFilled(bool[,] matrix, int x, int y) =>
+        y >= 0 && y < matrix.GetLength(0) && x >= 0 && x < matrix.GetLength(1) && matrix[y, x];
 
     private static IReadOnlyList<string> TrimEmptyRows(IReadOnlyList<string> sourceRows)
     {
@@ -807,8 +1080,6 @@ public static class XFETerminalTitleArt
             throw new ArgumentOutOfRangeException(nameof(options.OutlineWidth), "描边宽度必须在 0 到 8 之间。");
         if (options.ExtrudeDepth is < 0 or > 32)
             throw new ArgumentOutOfRangeException(nameof(options.ExtrudeDepth), "立体挤出深度必须在 0 到 32 之间。");
-        if (options.FigletFontName is { Length: > 128 } || options.FigletFontName?.Any(char.IsControl) == true)
-            throw new ArgumentException("FIGlet 字体名无效。", nameof(options.FigletFontName));
         ValidateEffectCharacter(options.OutlineCharacter, nameof(options.OutlineCharacter));
         ValidateEffectCharacter(options.ExtrudeCharacter, nameof(options.ExtrudeCharacter));
     }

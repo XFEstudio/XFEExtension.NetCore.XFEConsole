@@ -7,6 +7,9 @@ switch (command)
     case "self-test":
         RunSelfTests();
         break;
+    case "remote-debug-self-test":
+        await RemoteDebugSelfTest.RunAsync();
+        break;
     case "art":
         ShowArt();
         break;
@@ -22,7 +25,8 @@ switch (command)
     default:
         Console.WriteLine("XFEConsole feature demo");
         Console.WriteLine("  self-test  Run deterministic API checks");
-        Console.WriteLine("  art        Show every title-art style");
+        Console.WriteLine("  remote-debug-self-test  Verify server mode authentication and throughput");
+        Console.WriteLine("  art        Show every title-art style and built-in font");
         Console.WriteLine("  progress   Show inline + Windows Terminal taskbar progress");
         Console.WriteLine("  game       Run a keyboard/mouse canvas demo (Esc exits)");
         Console.WriteLine("  log        Run the original parallel logging stress demo");
@@ -40,7 +44,7 @@ static void RunSelfTests()
         ("RGB style", () => Contains("38;2;1;2;3", new XFETerminalStyle { Foreground = XFETerminalColor.FromRgb(1, 2, 3) }.ToSequence())),
         ("Legacy title art", TestLegacyTitleArt),
         ("Every title art style", TestEveryTitleArtStyle),
-        ("FIGlet font catalog", TestFigletFontCatalog),
+        ("Built-in font catalog", TestBuiltInFontCatalog),
         ("Outlined title art", TestOutlinedTitleArt),
         ("3D title art", TestThreeDimensionalTitleArt),
         ("Layered title art color", TestLayeredTitleArtColor),
@@ -103,40 +107,44 @@ static void TestModernTitleArt()
     Contains("▓", art);
 }
 
-static void TestFigletFontCatalog()
+static void TestBuiltInFontCatalog()
 {
-    if (XFETerminalTitleArt.AvailableFigletFonts.Count < 250)
-        throw new InvalidOperationException("Expected at least 250 bundled FIGlet fonts.");
-    foreach (var font in new[] { "Doom", "Epic", "Gothic", "Modular", "Rectangles", "Relief" })
+    Equal(Enum.GetValues<XFETerminalArtFont>().Length, XFETerminalTitleArt.AvailableFonts.Count);
+    var legacyResults = new HashSet<string>(StringComparer.Ordinal);
+    var modernResults = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var font in XFETerminalTitleArt.AvailableFonts)
     {
-        if (!XFETerminalTitleArt.IsFigletFontAvailable(font))
-            throw new InvalidOperationException($"Expected FIGlet font {font}.");
+        var legacy = XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
+        {
+            Font = font,
+            Style = XFETerminalArtStyle.Compact,
+            Compatibility = XFETerminalCompatibility.Legacy
+        });
+        var modern = XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
+        {
+            Font = font,
+            Style = XFETerminalArtStyle.Compact,
+            Compatibility = XFETerminalCompatibility.Modern
+        });
+        if (string.IsNullOrWhiteSpace(legacy) || string.IsNullOrWhiteSpace(modern))
+            throw new InvalidOperationException($"{font} rendered an empty string.");
+        DoesNotContain("\x1b", legacy);
+        DoesNotContain("\x1b", modern);
+        if (!legacyResults.Add(legacy))
+            throw new InvalidOperationException($"{font} did not produce a distinct legacy visual result.");
+        if (!modernResults.Add(modern))
+            throw new InvalidOperationException($"{font} did not produce a distinct visual result.");
     }
-    if (!XFETerminalTitleArt.IsFigletFontAvailable("banner-3d"))
-        throw new InvalidOperationException("Normalized FIGlet font lookup failed.");
 
     var art = XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
     {
         Font = XFETerminalArtFont.Epic,
         Style = XFETerminalArtStyle.Compact,
-        Compatibility = XFETerminalCompatibility.Legacy
+        Compatibility = XFETerminalCompatibility.Modern
     });
-    Contains("_", art);
+    Contains("═", art);
     if (art.Split(Environment.NewLine).Length < 5)
-        throw new InvalidOperationException("Epic did not render as multi-line FIGlet art.");
-
-    var custom = XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
-    {
-        FigletFontName = "banner-3d",
-        Compatibility = XFETerminalCompatibility.Legacy
-    });
-    if (string.IsNullOrWhiteSpace(custom))
-        throw new InvalidOperationException("Custom FIGlet font rendered an empty string.");
-
-    Throws<ArgumentException>(() => XFETerminalTitleArt.GeneratePlain("XFE", new XFETerminalTitleArtOptions
-    {
-        FigletFontName = "does-not-exist"
-    }));
+        throw new InvalidOperationException("Epic did not render as multi-line built-in art.");
 }
 
 static void TestOutlinedTitleArt()
@@ -258,17 +266,11 @@ static void ShowArt()
         });
     }
 
-    foreach (var font in new[]
-             {
-                 XFETerminalArtFont.AnsiShadow,
-                 XFETerminalArtFont.Doom,
-                 XFETerminalArtFont.Epic,
-                 XFETerminalArtFont.Gothic,
-                 XFETerminalArtFont.Modular,
-                 XFETerminalArtFont.Relief
-             })
+    Console.WriteLine($"\nAll built-in fonts ({XFETerminalTitleArt.AvailableFonts.Count})");
+    for (var index = 0; index < XFETerminalTitleArt.AvailableFonts.Count; index++)
     {
-        Console.WriteLine($"\nFIGlet {font}");
+        var font = XFETerminalTitleArt.AvailableFonts[index];
+        Console.WriteLine($"\n[{index + 1}/{XFETerminalTitleArt.AvailableFonts.Count}] {font}");
         XFETerminalTitleArt.Write("XFE", new XFETerminalTitleArtOptions
         {
             Font = font,

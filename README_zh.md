@@ -122,7 +122,7 @@ await XFETerminalGame.RunAsync((game, cancellationToken) =>
 
 ### 彩色标题艺术字
 
-除兼容旧版的 5x5 点阵字体外，现已内置 250 多种 FIGlet 字体。常用字体可通过 `Standard`、`Big`、`Slant`、`AnsiShadow`、`Doom`、`Epic`、`Gothic`、`Ivrit`、`Modular`、`Ogre`、`Rectangles`、`Relief`、`Isometric`、`Larry3D` 等枚举直接选择；也可用 `FigletFontName` 按名称访问完整字体库。`AvailableFigletFonts` 返回所有可用名称。
+仓库内自研实现了 17 种字体，不依赖任何第三方字体包：`Pixel`、`Standard`、`Big`、`Small`、`Slant`、`AnsiShadow`、`SmallShadow`、`Doom`、`Epic`、`Gothic`、`Ivrit`、`Modular`、`Ogre`、`Rectangles`、`Relief`、`Isometric` 和 `Larry3D`。这些字体由内置字形矩阵经过线框连接、双线、块面、模块、镜像、浮雕、阴影和等距投影等独立算法生成，`AvailableFonts` 返回全部字体枚举。
 
 字体与效果可以自由组合：`OutlineWidth` 生成真正的外描边，`ExtrudeDepth` 和八种 `ExtrudeDirection` 生成多层立体挤出；正面、描边和挤出层分别由 `Color`/`Palette`、`OutlineColor`、`ExtrudeColor` 控制。`Outline` 样式默认生成 1 格描边，`ThreeDimensional` 默认生成 3 格右下挤出。
 
@@ -156,16 +156,16 @@ string terminalReady = XFEConsole.GenerateTitleArt("XFE", new XFETerminalTitleAr
 // 直接显示；Auto 自动区分新旧终端
 XFEConsole.WriteTitleArt("HELLO", new XFETerminalTitleArtOptions
 {
-    FigletFontName = "Banner3D", // 完整字体目录中的任意名称
+    Font = XFETerminalArtFont.Larry3D,
     Palette = XFETerminalArtPalette.Ocean,
     Compatibility = XFETerminalCompatibility.Auto
 });
 
-foreach (string fontName in XFETerminalTitleArt.AvailableFigletFonts)
-    Console.WriteLine(fontName);
+foreach (XFETerminalArtFont font in XFETerminalTitleArt.AvailableFonts)
+    Console.WriteLine(font);
 ```
 
-现代模式使用 Unicode 效果字符与 ANSI 真彩色，并允许一行内分别呈现正面、描边和立体层颜色；传统模式自动改用 ASCII 效果字符，直接显示时映射至 `ConsoleColor`，不会把转义字符打印到旧终端。FIGlet 字体主要覆盖英文、数字和常用标点；不支持的中文、Emoji 等字符会自动使用保留原文字的边框样式。
+现代模式使用 Unicode 效果字符与 ANSI 真彩色，并允许一行内分别呈现正面、描边和立体层颜色；传统模式自动改用 ASCII 效果字符，直接显示时映射至 `ConsoleColor`，不会把转义字符打印到旧终端。内置字形覆盖英文、数字和常用标点；不支持的中文、Emoji 等字符会自动使用保留原文字的边框样式。
 
 示例项目提供 `self-test`、`art`、`progress` 和 `game` 四个入口：
 
@@ -191,6 +191,19 @@ bool connected = await XFEConsole.UseXFEConsole("ws://192.168.1.100:3280/", "MyA
 ```
 
 连接后，所有 `Console.WriteLine` 和 `Console.Write` 的输出都会被自动转发到远程控制台。
+
+### 第二调试模式：由工具箱主动连接程序
+
+```csharp
+// 调试程序作为服务器运行；远程工具箱需要相同密码才能接收输出
+XFEConsoleProgramServer server = await XFEConsole.UseXFEConsoleServer(
+    port: 3280,
+    localOnly: false,
+    password: "your-password",
+    programName: "MyApp");
+```
+
+在工具箱的控制台设置中启用“第二调试模式”，填写 `ws://服务器地址:3280/` 和相同密码后启动即可。仅在同一台计算机调试时将 `localOnly` 保持为 `true`；跨网络使用 `ws` 时建议通过可信局域网或 VPN，公网场景应在 TLS 反向代理后使用 `wss`。
 
 ### 属性配置
 

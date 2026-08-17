@@ -1,7 +1,5 @@
 ﻿using System.Diagnostics;
 using XFEExtension.NetCore.CyberComm;
-using XFEExtension.NetCore.FormatExtension;
-using XFEExtension.NetCore.TaskExtension;
 
 namespace XFEExtension.NetCore.XFEConsole;
 
@@ -17,11 +15,20 @@ namespace XFEExtension.NetCore.XFEConsole;
 /// <param name="password">密码</param>
 public class XFEConsoleProgramClient(string ipAddress, string clientName, string clientID, string password)
 {
-    private event EndTaskTrigger<bool>? ConnectTrigger;
     /// <summary>
     /// 客户端
     /// </summary>
-    public CyberCommClient Client { get; set; } = new(ipAddress);
+    public CyberCommClient Client { get; set; } = new(new CyberCommClientOptions
+    {
+        ServerUri = new Uri(ipAddress, UriKind.Absolute),
+        Reconnect = new CyberCommReconnectOptions { Enabled = false, MaxAttempts = 0 },
+        RequestHeaders = new Dictionary<string, string>
+        {
+            [nameof(ClientName)] = clientName,
+            [nameof(Password)] = password,
+            [nameof(ClientID)] = clientID
+        }
+    });
     /// <summary>
     /// 客户端名称
     /// </summary>
@@ -40,33 +47,18 @@ public class XFEConsoleProgramClient(string ipAddress, string clientName, string
     /// <returns></returns>
     public async Task<bool> Connect()
     {
-        Client.Connected += Client_Connected;
-        Client.MessageReceived += Client_MessageReceived;
-        Client.ClientWebSocket.Options.SetRequestHeader(nameof(ClientName), ClientName);
-        Client.ClientWebSocket.Options.SetRequestHeader(nameof(Password), Password);
-        Client.ClientWebSocket.Options.SetRequestHeader(nameof(ClientID), ClientID);
-        _ = Client.StartCyberCommClient();
-        if (Client.IsConnected)
-            return true;
-        return await new XFEWaitTask<bool>(ref ConnectTrigger!);
-    }
-
-    private static void Client_MessageReceived(object? sender, CyberCommClientEventArgs e)
-    {
-        switch (e.MessageType)
+        try
         {
-            case BackMessageType.Text:
-            case BackMessageType.Binary:
-                break;
-            case BackMessageType.Error:
-                Debug.WriteLine(e.Exception);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            Client.ErrorHandler = exception => Debug.WriteLine(exception);
+            await Client.ConnectAsync().ConfigureAwait(false);
+            return Client.IsConnected;
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine(exception);
+            return false;
         }
     }
-
-    private void Client_Connected(object? sender, EventArgs e) => ConnectTrigger?.Invoke(true);
 
     /// <summary>
     /// 输出控制台消息
@@ -79,7 +71,7 @@ public class XFEConsoleProgramClient(string ipAddress, string clientName, string
         try
         {
             if (Client.IsConnected)
-                await Client.SendTextMessage(new XFEDictionary("IsLine", isLine ? "true" : "false", "Text", message));
+                await Client.SendTextAsync(XFEConsoleProtocol.CreateOutputMessage(message, isLine));
         }
         catch { }
     }

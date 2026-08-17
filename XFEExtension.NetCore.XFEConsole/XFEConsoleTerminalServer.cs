@@ -51,10 +51,7 @@ public class XFEConsoleTerminalServer
     {
         Password = password;
         Server = localOnly ? new CyberCommServer($"http://localhost:{port}/") : new CyberCommServer(port);
-        Server.ServerStarted += Server_ServerStarted;
-        Server.ClientConnected += Server_ClientConnected;
-        Server.ConnectionClosed += Server_ConnectionClosed;
-        Server.MessageReceived += Server_MessageReceived;
+        ConfigureServer();
     }
     /// <summary>
     /// XFE控制台终端服务器
@@ -65,34 +62,62 @@ public class XFEConsoleTerminalServer
     {
         Password = password;
         Server = new CyberCommServer(ipAddress);
-        Server.ServerStarted += Server_ServerStarted;
-        Server.ClientConnected += Server_ClientConnected;
-        Server.ConnectionClosed += Server_ConnectionClosed;
-        Server.MessageReceived += Server_MessageReceived;
+        ConfigureServer();
     }
 
-    private void Server_MessageReceived(object? sender, CyberCommServerEventArgs e)
+    private void ConfigureServer()
     {
+        Server.StartedHandler = cancellationToken =>
+        {
+            Server_ServerStarted();
+            return ValueTask.CompletedTask;
+        };
+        Server.WebSocketConnectedHandler = async (eventArgs, cancellationToken) =>
+            await Server_ClientConnected(eventArgs).ConfigureAwait(false);
+        Server.WebSocketClosedHandler = (eventArgs, cancellationToken) =>
+        {
+            Server_ConnectionClosed(eventArgs);
+            return ValueTask.CompletedTask;
+        };
+        Server.WebSocketMessageHandler = (eventArgs, cancellationToken) =>
+        {
+            Server_MessageReceived(eventArgs);
+            return ValueTask.CompletedTask;
+        };
+    }
+
+    private void Server_MessageReceived(CyberCommServerEventArgs e)
+    {
+        XFEConsoleClientInfo? clientInfo;
+        lock (ClientInfoDictionary)
+            ClientInfoDictionary.TryGetValue(e.CurrentWebSocket, out clientInfo);
+        if (clientInfo is null)
+            return;
+
         switch (e.MessageType)
         {
             case BackMessageType.Text:
-                MessageReceived?.Invoke(ClientInfoDictionary[e.CurrentWebSocket], e.TextMessage!);
+                MessageReceived?.Invoke(clientInfo, e.TextMessage!);
                 break;
             case BackMessageType.Binary:
                 break;
             case BackMessageType.Error:
-                ErrorOccurred?.Invoke(ClientInfoDictionary[e.CurrentWebSocket], e.Exception!);
+                ErrorOccurred?.Invoke(clientInfo, e.Exception!);
                 break;
         }
     }
 
-    private void Server_ConnectionClosed(object? sender, CyberCommServerEventArgs e)
+    private void Server_ConnectionClosed(CyberCommServerEventArgs e)
     {
-        if (!ClientInfoDictionary.Remove(e.CurrentWebSocket, out var clientInfo)) return;
+        XFEConsoleClientInfo? clientInfo;
+        lock (ClientInfoDictionary)
+        {
+            if (!ClientInfoDictionary.Remove(e.CurrentWebSocket, out clientInfo)) return;
+        }
         Disconnected?.Invoke(this, clientInfo);
     }
 
-    private async void Server_ClientConnected(object? sender, CyberCommServerEventArgs e)
+    private async Task Server_ClientConnected(CyberCommServerEventArgs e)
     {
         try
         {
@@ -101,11 +126,14 @@ public class XFEConsoleTerminalServer
                 var password = e.WSHeader["Password"]!;
                 var clientName = e.WSHeader["ClientName"]!;
                 var clientUuid = e.WSHeader["ClientID"]!;
-                if (password != Password) return;
-                var clientInfo = new XFEConsoleClientInfo(clientName, clientUuid, password, e);
-                ClientInfoDictionary.Add(e.CurrentWebSocket, clientInfo);
-                Connected?.Invoke(this, clientInfo);
-                return;
+                if (password == Password)
+                {
+                    var clientInfo = new XFEConsoleClientInfo(clientName, clientUuid, password, e);
+                    lock (ClientInfoDictionary)
+                        ClientInfoDictionary.Add(e.CurrentWebSocket, clientInfo);
+                    Connected?.Invoke(this, clientInfo);
+                    return;
+                }
             }
         }
         catch { }
@@ -123,7 +151,7 @@ public class XFEConsoleTerminalServer
         }
     }
 
-    private void Server_ServerStarted(object? sender, EventArgs e)
+    private void Server_ServerStarted()
     {
         ClientInfoDictionary = [];
         ServerStarted?.Invoke(this);
@@ -134,6 +162,15 @@ public class XFEConsoleTerminalServer
     /// <returns></returns>
     public async Task StartServer()
     {
-        await Server.StartCyberCommServer();
+        await Server.StartAsync().ConfigureAwait(false);
+        await Server.RunAsync().ConfigureAwait(false);
     }
+    /// <summary>
+    /// 启动服务器并在监听就绪后返回。
+    /// </summary>
+    public Task StartAsync(CancellationToken cancellationToken = default) => Server.StartAsync(cancellationToken);
+    /// <summary>
+    /// 停止服务器并关闭当前连接。
+    /// </summary>
+    public Task StopAsync(CancellationToken cancellationToken = default) => Server.StopAsync(cancellationToken);
 }
